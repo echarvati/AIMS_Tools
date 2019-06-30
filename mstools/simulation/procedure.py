@@ -5,11 +5,13 @@ class Procedure:
     NVT_VACUUM = 'nvt-vacuum'
     NVT_SLAB = 'nvt-slab'
     NPT_BINARY_SLAB = 'npt-binary-slab'
-    choices = [NPT, NVT_CV, NVT_VISCOSITY, NVT_VACUUM, NVT_SLAB, NPT_BINARY_SLAB]
+    NPT_PPM = 'ppm'
+    choices = [NPT, NVT_CV, NVT_VISCOSITY, NVT_VACUUM, NVT_SLAB, NPT_BINARY_SLAB, NPT_PPM]
     T_RELEVANT = choices
-    P_RELEVANT = [NPT, NVT_CV, NVT_VISCOSITY, NPT_BINARY_SLAB]
+    P_RELEVANT = [NPT, NVT_CV, NVT_VISCOSITY, NPT_BINARY_SLAB, NPT_PPM]
 
     prior = {
         NVT_CV : NPT,
         NVT_VISCOSITY: NPT,
+        NPT_PPM: NPT,
     }

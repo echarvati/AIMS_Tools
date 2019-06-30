@@ -10,6 +10,7 @@ class Npt(GmxSimulation):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.procedure = 'npt'
+        self.dt = 0.002
         self.logs = ['npt.log', 'hvap.log']
         self.n_atom_default = 3000
         self.n_mol_default = 75
@@ -34,6 +35,7 @@ class Npt(GmxSimulation):
     def prepare(self, model_dir='.', gro='conf.gro', top='topol.top', T=298, P=1, jobname=None, TANNEAL=800,
                 dt=0.002, nst_eq=int(4E5), nst_run=int(5E5), nst_edr=100, nst_trr=int(5E4), nst_xtc=int(1E3),
                 drde=False, **kwargs) -> [str]:
+        self.dt = dt
         if os.path.abspath(model_dir) != os.getcwd():
             shutil.copy(os.path.join(model_dir, gro), gro)
             shutil.copy(os.path.join(model_dir, top), top)
@@ -105,14 +107,18 @@ class Npt(GmxSimulation):
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
-    def extend(self, extend=500, jobname=None, sh=None) -> [str]:
+    def extend(self, jobname=None, sh=None, info=None, dt=0.002) -> [str]:
         '''
         extend simulation for 500 ps
         '''
-        self.gmx.extend_tpr('npt.tpr', extend, silent=True)
-
         nprocs = self.jobmanager.nprocs
         commands = []
+
+        if info==None:
+            extend = 500
+        else:
+            extend = info.get('continue_n')[0] * dt
+        self.gmx.extend_tpr('npt.tpr', extend, silent=True)
         # Extending NPT production
         cmd = self.gmx.mdrun(name='npt', nprocs=nprocs, extend=True, get_cmd=True)
         commands.append(cmd)
@@ -130,6 +136,13 @@ class Npt(GmxSimulation):
         import numpy as np
         from ...panedr import edr_to_df
 
+        info_dict = {
+            'failed': [],
+            'continue': [],
+            'continue_n': [],
+            'reason': [],
+            'name': ['npt']
+        }
         df = edr_to_df('npt.edr')
         potential_series = df.Potential
         density_series = df.Density
@@ -155,30 +168,25 @@ class Npt(GmxSimulation):
             except Exception as e:
                 print(repr(e))
         if p < 0.01:
-            return {
-                'failed': True,
-                'reason': 'incorrect_ensemble'
-            }
+            info_dict.update({'warning': 'KS test for kinetic energy failed: p<0.01'})
+        elif p < 0.05:
+            info_dict.update({'warning': 'KS test for kinetic energy failed: 0.01 < p < 0.05'})
 
         ### Check structure freezing using Density
         if density_series.min() / 1000 < 0.1:  # g/mL
-            return {
-                'failed': True,
-                'reason': 'vaporize'
-            }
+            info_dict['failed'].append(True)
+            info_dict['reason'].append('vaporize')
+            return info_dict
 
         ### Check structure freezing using Diffusion of COM of molecules. Only use last 400 ps data
         diffusion, _ = self.gmx.diffusion('npt.xtc', 'npt.tpr', mol=True, begin=length - 400)
         if diffusion < 1E-8:  # cm^2/s
-            return {
-                'failed': True,
-                'reason': 'freeze'
-            }
+            info_dict['failed'].append(True)
+            info_dict['reason'].append('freeze')
+            return info_dict
 
         ### Check convergence
-        if not check_converge:
-            when = 0
-        else:
+        if check_converge:
             # use potential to do a initial determination
             # use at least 4/5 of the data
             _, when_pe = is_converged(potential_series, frac_min=0)
@@ -187,7 +195,14 @@ class Npt(GmxSimulation):
             _, when_dens = is_converged(density_series, frac_min=0)
             when = max(when_pe, when_dens)
             if when > length * 0.5:
-                return None
+                info_dict['failed'].append(False)
+                info_dict['continue'].append(True)
+                info_dict['continue_n'].append(2.5e5)
+                info_dict['reason'].append('PE and density not converged')
+                return info_dict
+        else:
+            when = 0
+
 
         ### Get expansion and compressibility using fluctuation method
         nblock = 5
@@ -209,7 +224,10 @@ class Npt(GmxSimulation):
             self.gmx.get_properties_stderr('npt.edr',
                                            ['Temperature', 'Pressure', 'Potential', 'Density'],
                                            begin=when)
-        return {
+        info_dict['failed'].append(False)
+        info_dict['continue'].append(False)
+        info_dict['reason'].append('converge')
+        ad_dict = {
             'length'     : length,
             'converge'   : when,
             'temperature': temperature_and_stderr,  # K
@@ -220,6 +238,8 @@ class Npt(GmxSimulation):
             'expansion'  : [expansion, expan_stderr],
             'compress'   : [compressi, compr_stderr],
         }
+        info_dict.update(ad_dict)
+        return info_dict
 
     def clean(self):
         for f in os.listdir(os.getcwd()):
@@ -234,14 +254,37 @@ class Npt(GmxSimulation):
     def post_process(T_list, P_list, result_list, n_mol_list, **kwargs) -> (dict, str):
         t_set = set(T_list)
         p_set = set(P_list)
+        def round3(x):
+            return float('%.3e' % x)
+
+        if len(p_set)==1:
+            dens_stderr_list = [list(map(round3, result['density'])) for result in result_list]
+            eint_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['einter'])) for result in result_list]
+            comp_stderr_list = [list(map(round3, result['compress'])) for result in result_list]
+            t_p_dens_stderr_list = list(map(list, zip(T_list, P_list, dens_stderr_list)))
+            t_p_dens_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+            t_p_eint_stderr_list = list(map(list, zip(T_list, P_list, eint_stderr_list)))
+            t_p_eint_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+            t_p_comp_stderr_list = list(map(list, zip(T_list, P_list, comp_stderr_list)))
+            t_p_comp_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+
+            _t_list = [element[0] for element in t_p_dens_stderr_list]
+            _eint_list = [element[2][0] for element in t_p_eint_stderr_list]
+            from ...analyzer.fitting import polyfit
+            _t_eint_coeff, _t_eint_score = polyfit(_t_list, _eint_list, 3)
+            post_result = {
+                'density': t_p_dens_stderr_list,
+                'einter': t_p_eint_stderr_list,
+                'compress': t_p_comp_stderr_list,
+                'einter-t-poly3': [list(map(round3, _t_eint_coeff)), round3(_t_eint_score)]
+            }
+            return post_result, 'not important'
+
+
         if len(t_set) < 5 or len(p_set) < 5:
             return None, 'T or P points less than 5'
 
         from mstools.analyzer.fitting import polyfit_2d, polyfit, polyval_derivative
-
-        def round3(x):
-            return float('%.3e' % x)
-
         ### einter divided by number of molecules
         dens_stderr_list = [list(map(round3, result['density'])) for result in result_list]
         eint_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['einter'])) for result in result_list]

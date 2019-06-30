@@ -521,6 +521,15 @@ class GMX:
         sp = Popen(cmd.split(), stdout=stdout, stderr=stderr)
         sp.communicate()
 
+    def trjconv(self, tpr, input_trj, output_trj, pbc_nojump=False, skip=1, silent=False, select='System'):
+        cmd = '%s trjconv -s %s -f %s -o %s -skip %i' % (self.GMX_BIN, tpr, input_trj, output_trj, skip)
+        if pbc_nojump:
+            cmd += ' -pbc nojump'
+        (stdout, stderr) = (PIPE, PIPE) if silent else (None, None)
+        sp = Popen(cmd.split(), stdin=PIPE, stdout=stdout, stderr=stderr)
+        sp.communicate(input=select.encode())
+
+
     @staticmethod
     def generate_gpu_multidir_cmds(dirs: [str], commands: [str], n_parallel,
                                    n_gpu=0, n_omp=None, n_procs=None) -> [[str]]:

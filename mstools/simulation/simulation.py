@@ -70,16 +70,26 @@ class Simulation():
             molwt_list.append(py_mol.molwt)
             density_list.append(estimate_density_from_formula(py_mol.formula) * 0.9)  # * 0.9, build box will be faster
 
-        if n_mol_list is not None:
-            self.n_mol_list = n_mol_list[:]
-        else:
+        if n_mol_list is None and n_atoms is None:
             if n_mol_ratio is None:
                 n_mol_ratio = [1] * n_components
             n_atom_all = sum([n_atom_list[i] * n for i, n in enumerate(n_mol_ratio)])
-            if n_atoms is None:
-                n_atoms = n_atom_all * math.ceil(self.n_mol_default / sum(n_mol_ratio))
-                n_atoms = max(n_atoms, self.n_atom_default)
+            n_atoms = n_atom_all * math.ceil(self.n_mol_default / sum(n_mol_ratio))
+            n_atoms = max(n_atoms, self.n_atom_default)
             self.n_mol_list = [math.ceil(n_atoms / n_atom_all) * n for n in n_mol_ratio]
+        else:
+            if n_mol_list is not None:
+                n_mol_list1 = n_mol_list[:]
+            else:
+                n_mol_list1 = [0] * n_components
+            if n_atoms is not None:
+                if n_mol_ratio is None:
+                    n_mol_ratio = [1] * n_components
+                n_atom_all = sum([n_atom_list[i] * n for i, n in enumerate(n_mol_ratio)])
+                n_mol_list2 = [math.ceil(n_atoms / n_atom_all) * n for n in n_mol_ratio]
+            else:
+                n_mol_list2 = [0] * n_components
+            self.n_mol_list = max(n_mol_list1, n_mol_list2)
 
         mass = sum([molwt_list[i] * self.n_mol_list[i] for i in range(n_components)])
 

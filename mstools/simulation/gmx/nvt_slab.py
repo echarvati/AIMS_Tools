@@ -12,6 +12,7 @@ class NvtSlab(GmxSimulation):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.procedure = 'nvt-slab'
+        self.dt = 0.002
         self.logs = ['nvt.log']
         self.n_atom_default = 12000
         self.n_mol_default = 400
@@ -44,6 +45,7 @@ class NvtSlab(GmxSimulation):
     def prepare(self, model_dir='.', gro='conf.gro', top='topol.top', T=298, jobname=None, TANNEAL=None,
                 dt=0.002, nst_eq=int(4E5), nst_run=int(4E6), nst_edr=100, nst_trr=int(5E4), nst_xtc=int(5E2),
                 drde=False, **kwargs) -> [str]:
+        self.dt = dt
         if os.path.abspath(model_dir) != os.getcwd():
             shutil.copy(os.path.join(model_dir, gro), gro)
             shutil.copy(os.path.join(model_dir, top), top)
@@ -103,14 +105,20 @@ class NvtSlab(GmxSimulation):
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
-    def extend(self, extend=2000, jobname=None, sh=None) -> [str]:
+    def extend(self, jobname=None, sh=None, info=None, dt=0.002) -> [str]:
         '''
         extend simulation for 2000 ps
         '''
+        nprocs = self.jobmanager.nprocs
+        commands = []
+
+        if info==None:
+            extend = 2000
+        else:
+            extend = info.get('continue_n')[0] * dt
         self.gmx.extend_tpr('nvt.tpr', extend, silent=True)
 
         nprocs = self.jobmanager.nprocs
-        commands = []
         # Extending NVT production
         cmd = self.gmx.mdrun(name='nvt', nprocs=nprocs, extend=True, get_cmd=True)
         commands.append(cmd)
@@ -123,7 +131,13 @@ class NvtSlab(GmxSimulation):
         from ...panedr import edr_to_df
         from ...analyzer.series import is_converged
         from ...analyzer.structure import check_vle_density
-
+        info_dict = {
+            'failed': [],
+            'continue': [],
+            'continue_n': [],
+            'reason': [],
+            'name': ['nvt-slab']
+        }
         df = edr_to_df('nvt.edr')
         potential_series = df.Potential
         length = potential_series.index[-1]
@@ -131,10 +145,9 @@ class NvtSlab(GmxSimulation):
         ### Check structure freezing using Diffusion of COM of molecules. Only use last 400 ps of data
         diffusion, _ = self.gmx.diffusion('nvt.xtc', 'nvt.tpr', mol=True, begin=length - 400)
         if diffusion < 1E-8:  # cm^2/s
-            return {
-                'failed': True,
-                'reason': 'freeze'
-            }
+            info_dict['failed'].append(True)
+            info_dict['reason'].append('freeze')
+            return info_dict
 
         # use potential to do a initial determination
         # use at least 4/5 of the data
@@ -306,19 +319,26 @@ class NvtSlab(GmxSimulation):
         # Failed if more than 1/4 pieces do not have interface
         # Failed if pieces at last 1/5 time span have no interface
         if len(dliq_series) < n_pieces * 0.75 or dliq_series.index[-1] < length * 0.8:
-            return {
-                'failed': True,
-                'reason': 'no_interface'
-            }
+            info_dict['failed'].append(True)
+            info_dict['reason'].append('no_interface')
+            return info_dict
 
         _, when_liq = is_converged(dliq_series, frac_min=0)
         _, when_gas = is_converged(dgas_series, frac_min=0)
         # Convergence should be at least 4 ns
         if when_liq > length - 4000:
-            return None
+            info_dict['failed'].append(False)
+            info_dict['continue'].append(True)
+            info_dict['continue_n'].append(1e6)
+            info_dict['reason'].append('not converged')
+            return info_dict
         if when_gas > length - 4000:
             if dgas_series.loc[when_gas:].mean() > 5:
-                return None
+                info_dict['failed'].append(False)
+                info_dict['continue'].append(True)
+                info_dict['continue_n'].append(1e6)
+                info_dict['reason'].append('not converged')
+                return info_dict
             else:
                 # Even if not converge. The density is so small < 5 kg/m^3. Considered as converged.
                 when_gas = length - 4000
@@ -335,7 +355,11 @@ class NvtSlab(GmxSimulation):
             self.gmx.get_properties_stderr('nvt.edr',
                                            ['Temperature', 'Pressure', 'Pres-ZZ', '#Surf*SurfTen', 'Potential'],
                                            begin=when)
-        return {
+        info_dict['failed'].append(False)
+        info_dict['continue'].append(False)
+        info_dict['continue_n'].append(0)
+        info_dict['reason'].append('converge')
+        ad_dict = {
             'length'     : length,
             'converge'   : when,
             'temperature': temperature_and_stderr,  # K
@@ -346,6 +370,8 @@ class NvtSlab(GmxSimulation):
             'dliq'       : list(block_average(dliq_series.loc[when:] / 1000)),  # g/mL
             'dgas'       : list(block_average(dgas_series.loc[when:] / 1000)),  # g/mL
         }
+        info_dict.update(ad_dict)
+        return info_dict
 
     def clean(self):
         for f in os.listdir(os.getcwd()):
