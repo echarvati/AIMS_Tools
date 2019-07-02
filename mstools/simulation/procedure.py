@@ -7,8 +7,6 @@ class Procedure:
     NPT_BINARY_SLAB = 'npt-binary-slab'
     NPT_PPM = 'ppm'
     choices = [NPT, NVT_CV, NVT_VISCOSITY, NVT_VACUUM, NVT_SLAB, NPT_BINARY_SLAB, NPT_PPM]
-    T_RELEVANT = choices
-    P_RELEVANT = [NPT, NVT_CV, NVT_VISCOSITY, NPT_BINARY_SLAB, NPT_PPM]
 
     prior = {
         NVT_CV : NPT,

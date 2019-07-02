@@ -12,8 +12,8 @@ class Simulation():
             self.dff = DFF(dff_root=dff_root, default_db=dff_db, default_table=dff_table)
         self.jobmanager = jobmanager
         self.procedure = None
-        self.n_atom_default: int = None
-        self.n_mol_default: int = None
+        self.n_atom_default: int = 3000
+        self.n_mol_default: int = 120
 
         self.n_mol_list: [int]
         self.msd = 'init.msd'
@@ -45,7 +45,7 @@ class Simulation():
     def get_post_data(self, **kwargs):
         pass
 
-    def set_system(self, smiles_list: [str], n_mol_list: [int] = None, n_atoms: int = None, n_mol_ratio: [int] = None,
+    def set_system(self, smiles_list: [str], n_mol_list: [int] = None, n_atoms: int = None, n_mols: int = None, n_mol_ratio: [int] = None,
                    length: float = None, density: float = None, name_list: [str] = None):
         if type(smiles_list) != list:
             raise Exception('smiles_list should be list')
@@ -70,26 +70,19 @@ class Simulation():
             molwt_list.append(py_mol.molwt)
             density_list.append(estimate_density_from_formula(py_mol.formula) * 0.9)  # * 0.9, build box will be faster
 
-        if n_mol_list is None and n_atoms is None:
+        if n_mol_list is not None:
+            self.n_mol_list = n_mol_list
+        else:
             if n_mol_ratio is None:
                 n_mol_ratio = [1] * n_components
             n_atom_all = sum([n_atom_list[i] * n for i, n in enumerate(n_mol_ratio)])
-            n_atoms = n_atom_all * math.ceil(self.n_mol_default / sum(n_mol_ratio))
-            n_atoms = max(n_atoms, self.n_atom_default)
-            self.n_mol_list = [math.ceil(n_atoms / n_atom_all) * n for n in n_mol_ratio]
-        else:
-            if n_mol_list is not None:
-                n_mol_list1 = n_mol_list[:]
-            else:
-                n_mol_list1 = [0] * n_components
             if n_atoms is not None:
-                if n_mol_ratio is None:
-                    n_mol_ratio = [1] * n_components
-                n_atom_all = sum([n_atom_list[i] * n for i, n in enumerate(n_mol_ratio)])
-                n_mol_list2 = [math.ceil(n_atoms / n_atom_all) * n for n in n_mol_ratio]
-            else:
-                n_mol_list2 = [0] * n_components
-            self.n_mol_list = max(n_mol_list1, n_mol_list2)
+                self.n_atom_default = n_atoms
+            if n_mols is not None:
+                self.n_mol_default = n_mols
+            n_atoms_from_mol = n_atom_all * math.ceil(self.n_mol_default / sum(n_mol_ratio))
+            n_atoms = max(n_atoms_from_mol, self.n_atom_default)
+            self.n_mol_list = [math.ceil(n_atoms / n_atom_all) * n for n in n_mol_ratio]
 
         mass = sum([molwt_list[i] * self.n_mol_list[i] for i in range(n_components)])
 

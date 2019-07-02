@@ -271,7 +271,7 @@ class NptPPM(GmxSimulation):
                                 info_dict['warning'].append(None)
 
                         self.gmx.trjconv('%s.tpr' % name_ppm, '%s.xtc' % name_ppm, '%s_trj.gro' % name_ppm,
-                                         pbc_nojump=True, silent=True)
+                                         skip=10, pbc_nojump=True, silent=True)
                         result = self.ppm_is_converged('%s_trj.gro' % name_ppm)
                         info_dict['failed'].append(result.get('failed'))
                         info_dict['continue'].append(result.get('continue'))
