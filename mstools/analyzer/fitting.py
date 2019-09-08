@@ -163,6 +163,20 @@ def fit_logistic(x_list: [float], y_list: [float], guess: [float] = None, bounds
     return curve_fit_rsq(logistic, x_list, y_list, guess, bounds)
 
 
+def VTF(x, v0, t0, c):
+    return v0+c/(x-t0)
+
+# log(n)=log(n0)+c/(T-T0)
+
+def fit_VTF(x_list: [float], y_list: [float], guess: [float] = None, bounds=None) -> ((float), float):
+    import numpy as np
+
+    guess = guess or [y_list[-1]-1, x_list[0]-1, (y_list[0]-y_list[-1]+1)*(x_list[0]-x_list[0]+1)]
+    bounds = bounds or ([-np.inf, 0, 0], np.inf)
+
+    return curve_fit_rsq(VTF, x_list, y_list, guess, bounds)
+
+
 def fit_vle_tanh(x_list: [float], d_list: [float], guess: [float] = None, bounds=None) -> ((float), float):
     import numpy as np
 

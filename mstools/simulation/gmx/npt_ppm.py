@@ -13,8 +13,8 @@ class NptPPM(GmxSimulation):
         self.procedure = 'npt-ppm'
         self.dt = 0.001
         self.n_atoms_default = 6000
-        self.amplitudes_steps = amplitudes_steps or OrderedDict([(0.010, int(6.0e6)),
-                                                                 (0.020, int(3.0e6)),
+        self.amplitudes_steps = amplitudes_steps or OrderedDict([(0.010, int(9.0e6)),
+                                                                 (0.020, int(6.0e6)),
                                                                  (0.030, int(2.0e6)),
                                                                  (0.040, int(2.0e6)),
                                                                  # (0.050, int(1.0e6)),
@@ -106,10 +106,19 @@ class NptPPM(GmxSimulation):
         return commands
 
     def ppm_is_converged(self, trj):
-        traj = Trajectory(trj, readmass=True, COM=True)
+        traj = Trajectory(trj, readmass=True, COM=True, head_and_tail=True)
         frame = traj.traj_info[-1]
         frame.ReducedUnitTransform()
         nst = frame.step - traj.traj_info[0].step
+        if nst == 0:
+            nst = (frame.t - traj.traj_info[0].t) / self.dt
+        if nst == 0:
+            return {
+                'failed': True,
+                'reason': 'The simulation ended abnormally in this case, mostly occur in long chain system due to larger acceleration',
+                'continue': False,
+                'continue_n': 0
+            }
         n1 = n2 = n3 = n = 0
         X1 = Y1 = Z1 = M1 = 0.
         X2 = Y2 = Z2 = M2 = 0.
@@ -157,6 +166,9 @@ class NptPPM(GmxSimulation):
         X2 /= M2; Y2 /= M2; Z2 /= M2; n2 /= frame.atom_number
         X3 /= M3; Y3 /= M3; Z3 /= M3; n3 /= frame.atom_number
         n /= frame.atom_number
+        ad_dict = {
+            'more_info': 'X1 = %f, Y1 = %f, Z1 = %f, n1 = %f, X2 = %f, Y2 = %f, Z2 = %f, n2 = %f, X3 = %f, Y3 = %f, Z3 = %f, n3 = %f' % (X1, Y1, Z1, n1, X2, Y2, Z2, n2, X3, Y3, Z3, n3)
+        }
         if n > 0.75:
             return{
                 'failed': False,
@@ -164,74 +176,74 @@ class NptPPM(GmxSimulation):
                 'continue': False,
                 'continue_n': 0
             }
-        if X1 > 1.6:
-            if 0.8 < Z1 < 1.1 and n1 > 0.15:
-                rst1 = 0
-
-            else:
-                return {
-                    'failed': True,
-                    'reason': 'PPM trajectory error, please check it manually'
-                }
+        converge_criterion = 0.3
+        if X1 > 1 + converge_criterion:
+            rst1 = 0
+        elif X1 < 1:
+            raise Exception('X1 should > 1, unknown error occur')
         else:
-            rst1 = nst / (X1-1) * 0.6 - nst
-        if X2 > 1.6:
-            if -0.1 < Z2 < 0.2 and n2 > 0.15:
-                rst2 = 0
-            else:
-                return {
-                    'failed': True,
-                    'reason': 'PPM trajectory error, please check it manually'
-                }
+            rst1 = nst / (X1-1) * converge_criterion - nst
+        if X2 > 1 + converge_criterion:
+            rst2 = 0
+        elif X2 < 1:
+            raise Exception('X2 should > 1, unknown error occur')
         else:
-            rst2 = nst / (X1-1) * 0.6 - nst
-        if X3 < -0.6:
-            if 0.45 < Z3 < 0.55 and n3 > 0.3:
-                rst3 = 0
-            else:
-                return {
-                    'failed': True,
-                    'reason': 'PPM trajectory error, please check it manually'
-                }
+            rst2 = nst / (X2-1) * converge_criterion - nst
+        if X3 < -converge_criterion:
+            rst3 = 0
+        elif X3 > 0:
+            raise Exception('X3 should < 0, unknown error occur')
         else:
-            rst3 = nst / (X1-1) * 0.6 - nst
+            rst3 = nst / (-X3) * converge_criterion - nst
         rst = max(rst1, rst2, rst3)
-        rst = math.ceil(rst / 1.0e6) * 1.0e6
-        if rst > 1e8 and nst > 1.4e7:
-            return {
+        rst = int(math.ceil(rst / 1.0e6) * 1.0e6)
+        if rst > 5e8 and nst > 1.4e7:
+            info_dict = {
                 'failed': True,
                 'reason': 'the viscosity of this liquid is too high, need approximately %i additional step to converge' % (rst),
                 'continue': False,
                 'continue_n': 0
             }
-        result = {
-            'failed': False,
-            'reason': 'not converged',
-            'continue': True,
-            'continue_n': min(rst, int(9.0e6))
-        }
+        else:
+            info_dict = {
+                'failed': False,
+                'reason': 'not converged',
+                'continue': True,
+                'continue_n': min(rst, int(2.0e7))
+            }
         if rst == 0:
-            result['continue'] = False
-            result['reason'] = 'converged'
-        return result
+            info_dict['continue'] = False
+            info_dict['reason'] = 'converged'
+        info_dict.update(ad_dict)
+        return info_dict
 
-    def analyze(self, dirs=None, check_converge=True, prior_result=None, **kwargs):
+    def analyze(self, dirs=None, check_converge=True, more_info=True, **kwargs):
         import numpy as np
         from ...panedr import edr_to_df
         from ...analyzer.fitting import polyfit
 
+        a_list = []
         vis_list = []
         stderr_list = []
         info_dict = {
             'failed': [],
             'continue': [],
+            'continue_n': [],
             'reason': [],
             'name': [],
-            'continue_n': [],
-            'warning': []
+            'warning': [],
+            'more_info': []
         }
         for ppm in self.amplitudes_steps.keys():
             name_ppm = 'ppm-%.3f' % ppm
+            if not os.path.exists('%s.edr' % name_ppm):
+                info_dict['failed'].append(True)
+                info_dict['continue'].append(False)
+                info_dict['continue_n'].append(0)
+                info_dict['reason'].append('file do not exists')
+                continue
+
+            info_dict['name'].append(name_ppm)
             df = edr_to_df('%s.edr' % name_ppm)
 
             # density check
@@ -241,10 +253,9 @@ class NptPPM(GmxSimulation):
             ### Check structure freezing using Density
             if density_series.min() / 1000 < 0.1:  # g/mL
                 info_dict['failed'].append(True)
-                info_dict['continue'].append(None)
-                info_dict['continue_n'].append(None)
+                info_dict['continue'].append(False)
+                info_dict['continue_n'].append(0)
                 info_dict['reason'].append('vaporize')
-                info_dict['name'].append(name_ppm)
             ### Check convergence
             else:
                 if check_converge:
@@ -260,16 +271,10 @@ class NptPPM(GmxSimulation):
                         info_dict['continue'].append(True)
                         info_dict['continue_n'].append(self.amplitudes_steps[ppm])
                         info_dict['reason'].append('PE and density not converged')
-                        info_dict['name'].append(name_ppm)
+                        info_dict['warning'].append(None)
+                        if more_info:
+                            info_dict['more_info'].append(None)
                     else:
-                        if prior_result != None:
-                            density_and_stderr = self.gmx.get_properties_stderr('%s.edr' % (name_ppm), ['Density'], begin=when)
-                            den_dev = abs(density_and_stderr[0][0] / 1000 - prior_result.get('density')[0]) / prior_result.get('density')[0]
-                            if den_dev > 0.02:
-                                info_dict['warning'].append('density is inconsistent with prior npt simulation %f, %f' % (prior_result.get('density')[0], density_and_stderr[0][0]/1000))
-                            else:
-                                info_dict['warning'].append(None)
-
                         self.gmx.trjconv('%s.tpr' % name_ppm, '%s.xtc' % name_ppm, '%s_trj.gro' % name_ppm,
                                          skip=10, pbc_nojump=True, silent=True)
                         result = self.ppm_is_converged('%s_trj.gro' % name_ppm)
@@ -277,7 +282,8 @@ class NptPPM(GmxSimulation):
                         info_dict['continue'].append(result.get('continue'))
                         info_dict['continue_n'].append(result.get('continue_n'))
                         info_dict['reason'].append(result.get('reason'))
-                        info_dict['name'].append(name_ppm)
+                        if more_info:
+                            info_dict['more_info'].append(result.get('more_info'))
                         os.remove('%s_trj.gro' % name_ppm)
 
             ###
@@ -290,19 +296,21 @@ class NptPPM(GmxSimulation):
             # use block average to estimate stderr, because 1/viscosity fluctuate heavily
             inv_blocks = average_of_blocks(inv_series.loc[when:])
             vis_blocks = [1000 / inv for inv in inv_blocks]  # convert Pa*s to cP
+            a_list.append(ppm)
             vis_list.append(np.mean(vis_blocks))
             stderr_list.append(np.std(vis_blocks, ddof=1) / math.sqrt(len(vis_blocks)))
 
-        if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
-            coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1)
+        # if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
-            ad_dict = {
-            'viscosity'  : coef_[0],
-            'score'      : score,
-            'vis_list'   : vis_list,
+
+        coef_, score = polyfit(a_list, vis_list, 1)
+        ad_dict = {
+            'viscosity': coef_[0],
+            'score': score,
+            'vis_list': vis_list,
             'stderr_list': stderr_list,
-            }
-            info_dict.update(ad_dict)
+        }
+        info_dict.update(ad_dict)
 
         return info_dict
 
@@ -313,3 +321,35 @@ class NptPPM(GmxSimulation):
                     os.remove(f)
                 except:
                     pass
+
+    @staticmethod
+    def post_process(T_list, P_list, result_list, n_mol_list, **kwargs) -> (dict, str):
+        t_set = set(T_list)
+        p_set = set(P_list)
+        def round3(x):
+            return float('%.3e' % x)
+
+        vis_score_list = [list(map(round3, [result['viscosity'], result['score']])) for result in result_list]
+        vis_list = [i[0] for i in vis_score_list]
+        t_p_vis_score_list = list(map(list, zip(T_list, P_list, vis_score_list)))
+        t_p_vis_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+        t_p_vis_list = list(map(list, zip(T_list, P_list, vis_list)))
+        t_p_vis_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+        p_coeff_score_list = []
+        from ...analyzer.fitting import fit_VTF
+        import numpy as np
+        for p in sorted(p_set):
+            _t_list = [element[0] for element in t_p_vis_list if element[1] == p]
+            _vis_list = [element[2] for element in t_p_vis_list if element[1] == p]
+            _y_fit = np.log(_vis_list)
+            coeff, score = fit_VTF(_t_list, _y_fit)
+            p_coeff_score_list.append([p, coeff, score])
+
+        post_result = {
+            't_p_vis_score_list': t_p_vis_score_list,
+            'p_coeff_score_list': p_coeff_score_list # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))*1000
+        }
+        return post_result, 'not important'
+
+
+

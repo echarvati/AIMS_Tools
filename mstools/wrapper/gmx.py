@@ -191,9 +191,14 @@ class GMX:
         results = []
         for prop in properties:
             for line in lines:
-                if line.lower().startswith(prop.lower()):
-                    results.append([float(line.split()[1]), float(line.split()[2])])
-                    break
+                if prop in ['Kinetic-En.', 'Total-Energy']:
+                    if line.lower().startswith(prop.lower().replace('-',' ')):
+                        results.append([float(line.split()[2]), float(line.split()[3])])
+                        break
+                else:
+                    if line.lower().startswith(prop.lower()):
+                        results.append([float(line.split()[1]), float(line.split()[2])])
+                        break
             else:
                 raise GmxError('Invalid property')
         return results
@@ -528,11 +533,9 @@ class GMX:
         (stdout, stderr) = (PIPE, PIPE) if silent else (None, None)
         sp = Popen(cmd.split(), stdin=PIPE, stdout=stdout, stderr=stderr)
         sp.communicate(input=select.encode())
-
-
+    
     @staticmethod
-    def generate_gpu_multidir_cmds(dirs: [str], commands: [str], n_parallel,
-                                   n_gpu=0, n_omp=None, n_procs=None) -> [[str]]:
+    def generate_gpu_multidir_cmds(dirs: [str], commands: [str], n_parallel, n_gpu=0, n_omp=None, n_procs=None) -> [[str]]:
         '''
         Set n_omp in most case. If n_procs is set, n_omp has no effect.
         :param dirs:

@@ -153,12 +153,13 @@ class Frame():
             self.z[i] /= self.boxZ
 
 class Trajectory():
-    def __init__(self, traj_name, readmass=False, COM=False, center=False, silent=True):
+    def __init__(self, traj_name, readmass=False, COM=False, center=False, silent=True, head_and_tail=False):
         self.traj_name = traj_name
         self.readmass = readmass
         self.COM = COM
         self.center = center
         self.silent = silent
+        self.head_and_tail = head_and_tail
         self.traj_info = []
         self.use_check()
         self.ReadTraj()
@@ -166,7 +167,6 @@ class Trajectory():
     def use_check(self):
         if self.COM == True and self.readmass == False:
             raise Exception('you need to set readmass=True, for COM=True\n')
-
 
     def ReadTraj(self):
         if self.traj_name.split('.')[-1]=='gro':
@@ -177,6 +177,8 @@ class Trajectory():
         atom_number = int(lines[1])
         frame_number = int(len(lines) / (atom_number+3))
         for i in range(frame_number):
+            if self.head_and_tail and  0 < i < frame_number - 1:
+                continue
             if not self.silent:
                 print('reading %i-th frame' % (i+1))
             temp_frame = Frame()
