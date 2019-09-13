@@ -124,7 +124,6 @@ class NptPPM(GmxSimulation):
         X2 = Y2 = Z2 = M2 = 0.
         X3 = Y3 = Z3 = M3 = 0.
         for i in range(frame.atom_number):
-            # print(frame.mass[i])
             if (not 0<frame.x[i]<1) or (not 0<frame.y[i]<1) or (not 0<frame.z[i]<1):
                 n += 1
             if frame.x[i] > 1:
@@ -133,7 +132,6 @@ class NptPPM(GmxSimulation):
                     Y1 += frame.y[i] * frame.mass[i]
                     Z1 += frame.z[i] * frame.mass[i]
                     M1 += frame.mass[i]
-                    # print(M1)
                     n1 += 1
                 else:
                     X2 += frame.x[i] * frame.mass[i]

@@ -47,6 +47,7 @@ class Cv(GaussSimulation):
             scale_list = []
             Cv_list = []
             Cv_corr_list = []
+            enthalpy_list = []
 
             content = open(log).read()
             if content.find('Normal termination') == -1:
@@ -89,7 +90,11 @@ class Cv(GaussSimulation):
                         Cv_corr_list.append(Cv_corr)
                     else:
                         Cv_corr_list.append(Cv)
-            return T_list, scale_list, Cv_list, Cv_corr_list
+
+                elif line.strip().startswith('Sum of electronic and thermal Enthalpies='):
+                    enthalpy = float(line.strip().split()[6])
+                    enthalpy_list.append(enthalpy)
+            return T_list, scale_list, Cv_list, Cv_corr_list, enthalpy_list
 
         import numpy as np
 
@@ -97,10 +102,11 @@ class Cv(GaussSimulation):
             logs = self.logs
         Cv_T = {}
         Cv_corr_T = {}
+        enthalpy_T = {}
         for log in logs:
             results = process_log(log)
             if results is not None:
-                T_list, scale_list, Cv_list, Cv_corr_list = results
+                T_list, scale_list, Cv_list, Cv_corr_list, enthalpy_list = results
                 for i, T in enumerate(T_list):
                     if T not in Cv_T.keys():
                         Cv_T[T] = []
@@ -108,19 +114,25 @@ class Cv(GaussSimulation):
                     if T not in Cv_corr_T.keys():
                         Cv_corr_T[T] = []
                     Cv_corr_T[T].append(Cv_corr_list[i])
+                    if T not in enthalpy_T.keys():
+                        enthalpy_T[T] = []
+                    enthalpy_T[T].append(enthalpy_list[i])
 
         if len(Cv_T) == 0:
             raise Exception('All jobs are failed')
 
         Cv_ave = {}
         Cv_corr_ave = {}
+        enthalpy_ave = {}
         for T in Cv_T.keys():
             Cv_ave[T] = [np.mean(Cv_T[T]), np.std(Cv_T[T], ddof=1)]
             Cv_corr_ave[T] = [np.mean(Cv_corr_T[T]), np.std(Cv_corr_T[T], ddof=1)]
+            enthalpy_ave[T] = [np.mean(enthalpy_T[T]), np.std(enthalpy_T[T], ddof=1)]
 
         return {
             'Cv'          : Cv_ave,
             'Cv-corrected': Cv_corr_ave,
+            'enthalpy'    : enthalpy_ave,
         }
 
     def clean(self):
