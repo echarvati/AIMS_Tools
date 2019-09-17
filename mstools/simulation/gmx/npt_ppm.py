@@ -283,7 +283,8 @@ class NptPPM(GmxSimulation):
                         if more_info:
                             info_dict['more_info'].append(result.get('more_info'))
                         os.remove('%s_trj.gro' % name_ppm)
-
+                else:
+                    raise Exception('for ppm.analyze you must use check_converge=True')
             ###
 
             inv_series = df['1/Viscosity']
@@ -295,9 +296,13 @@ class NptPPM(GmxSimulation):
             inv_blocks = average_of_blocks(inv_series.loc[when:])
             vis_blocks = [1000 / inv for inv in inv_blocks]  # convert Pa*s to cP
             a_list.append(ppm)
-            vis_list.append(np.mean(vis_blocks))
-            stderr_list.append(np.std(vis_blocks, ddof=1) / math.sqrt(len(vis_blocks)))
-
+            vis_and_stderr = [np.mean(vis_blocks), np.std(vis_blocks, ddof=1) / math.sqrt(len(vis_blocks))]
+            vis_list.append(vis_and_stderr[0])
+            stderr_list.append(vis_and_stderr[1])
+            if info_dict.get('failed')[-1]==False and info_dict.get('continue')[-1]==False and vis_and_stderr[1]/vis_and_stderr[0]>0.1:
+                info_dict['continue'][-1] = True
+                info_dict['continue_n'][-1] = int(5e6)
+                info_dict['reason'][-1] = 'error bar too large for viscosity calculation'
         # if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
 
