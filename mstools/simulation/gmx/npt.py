@@ -307,7 +307,7 @@ class Npt(GmxSimulation):
                 'hl-t-poly3': [list(map(round3, _t_hl_coeff)), round3(_t_hl_score)],
                 'electrical conductivity from diffusion constant': t_p_econ_stderr_list
             }
-            return post_result, 'not important'
+            return post_result, 'Single pressure simulation'
 
 
         if len(t_set) < 5 or len(p_set) < 5:
@@ -451,6 +451,7 @@ class Npt(GmxSimulation):
         ### Default value
         density = None
         einter = None
+        liquid_enthalpy = None
         hvap = None
         cp_inter = None
         cp_pv = None
@@ -489,13 +490,13 @@ class Npt(GmxSimulation):
             coef, score = polyfit(*zip(*_p_hl_list), 3)
             _p_list = list(zip(*_p_comp_list))[0]
             if P > min(_p_list) - 10 and P < max(_p_list) + 10:
-                hl = polyval(P, coef) # kJ/mol
+                liquid_enthalpy = polyval(P, coef) # kJ/mol
 
 
         return {
             'density'            : density,
             'einter'             : einter,
-            'liquid enthalpy'    : hl,
+            'liquid enthalpy'    : liquid_enthalpy,
             'hvap'               : hvap,
             'cp_inter'           : cp_inter,
             'cp_pv'              : cp_pv,
