@@ -125,9 +125,14 @@ class Cv(GaussSimulation):
         Cv_corr_ave = {}
         enthalpy_ave = {}
         for T in Cv_T.keys():
-            Cv_ave[T] = [np.mean(Cv_T[T]), np.std(Cv_T[T], ddof=1)]
-            Cv_corr_ave[T] = [np.mean(Cv_corr_T[T]), np.std(Cv_corr_T[T], ddof=1)]
-            enthalpy_ave[T] = [np.mean(enthalpy_T[T]), np.std(enthalpy_T[T], ddof=1)]
+            if len(Cv_T)==1:
+                Cv_ave[T] = [np.mean(Cv_T[T]), None]
+                Cv_corr_ave[T] = [np.mean(Cv_corr_T[T]), None]
+                enthalpy_ave[T] = [np.mean(enthalpy_T[T]), None]
+            else:
+                Cv_ave[T] = [np.mean(Cv_T[T]), np.std(Cv_T[T], ddof=1)]
+                Cv_corr_ave[T] = [np.mean(Cv_corr_T[T]), np.std(Cv_corr_T[T], ddof=1)]
+                enthalpy_ave[T] = [np.mean(enthalpy_T[T]), np.std(enthalpy_T[T], ddof=1)]
 
         return {
             'Cv'          : Cv_ave,
