@@ -276,9 +276,15 @@ class Npt(GmxSimulation):
         if len(p_set)==1:
             dens_stderr_list = [list(map(round3, result['density'])) for result in result_list]
             eint_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['einter'])) for result in result_list]
-            hl_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['liquid enthalpy'])) for result in result_list]
+            # hl_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['liquid enthalpy'])) for result in result_list]
+            hl_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]),
+                                       [result['einter'][0] + result['kinetic energy'][0] + result['pV'][0],
+                                        result['einter'][1] + result['kinetic energy'][1] + result['pV'][1]])) for
+                              result in
+                              result_list]
             comp_stderr_list = [list(map(round3, result['compress'])) for result in result_list]
             econ_stderr_list = [list(map(round3, result['electrical conductivity from diffusion constant'])) for result in result_list]
+
             t_p_dens_stderr_list = list(map(list, zip(T_list, P_list, dens_stderr_list)))
             t_p_dens_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
             t_p_eint_stderr_list = list(map(list, zip(T_list, P_list, eint_stderr_list)))
@@ -294,18 +300,33 @@ class Npt(GmxSimulation):
             _dens_list = [element[2][0] for element in t_p_dens_stderr_list]
             _eint_list = [element[2][0] for element in t_p_eint_stderr_list]
             _hl_list = [element[2][0] for element in t_p_hl_stderr_list]
+            _comp_list = [element[2][0] for element in t_p_comp_stderr_list]
+            _econ_list = [element[2][0] for element in t_p_econ_stderr_list]
             from ...analyzer.fitting import polyfit
             _t_dens_coeff, _t_dens_score = polyfit(_t_list, _dens_list, 3)
             _t_eint_coeff, _t_eint_score = polyfit(_t_list, _eint_list, 3)
             _t_hl_coeff, _t_hl_score = polyfit(_t_list, _hl_list, 3)
+            _t_comp_coeff, _t_comp_score = polyfit(_t_list, _comp_list, 3)
+            _t_econ_coeff, _t_comp_score = polyfit(_t_list, _econ_list, 3)
+
+            p = str(P_list[0])
+            t_dens_poly3 = t_eint_poly3 = t_hl_poly3 = t_comp_poly3 = t_econ_poly3 = {}
+            t_dens_poly3[p] = [list(map(round3, _t_dens_coeff)), round3(_t_dens_score), min(_t_list), max(_t_list)]
+            t_eint_poly3[p] = [list(map(round3, _t_eint_coeff)), round3(_t_eint_score), min(_t_list), max(_t_list)]
+            t_hl_poly3[p]   = [list(map(round3, _t_hl_coeff  )), round3(_t_hl_score  ), min(_t_list), max(_t_list)]
+            t_comp_poly3[p] = [list(map(round3, _t_comp_coeff)), round3(_t_comp_score), min(_t_list), max(_t_list)]
+            t_econ_poly3[p] = [list(map(round3, _t_econ_coeff)), round3(_t_econ_score), min(_t_list), max(_t_list)]
+
             post_result = {
                 'density': t_p_dens_stderr_list,
                 'einter': t_p_eint_stderr_list,
                 'compress': t_p_comp_stderr_list,
-                'dens-t-poly3': [list(map(round3, _t_dens_coeff)), round3(_t_dens_score)],
-                'einter-t-poly3': [list(map(round3, _t_eint_coeff)), round3(_t_eint_score)],
-                'hl-t-poly3': [list(map(round3, _t_hl_coeff)), round3(_t_hl_score)],
-                'electrical conductivity from diffusion constant': t_p_econ_stderr_list
+                'electrical conductivity from diffusion constant': t_p_econ_stderr_list,
+                'density-t-poly3': t_dens_poly3,
+                'einter-t-poly3': t_eint_poly3,
+                'hl-t-poly3': t_hl_poly3,
+                'compress-t-poly3': t_comp_poly3,
+                'econ-t-poly3': t_econ_poly3,
             }
             return post_result, 'Single pressure simulation'
 
@@ -317,7 +338,12 @@ class Npt(GmxSimulation):
         ### einter and liquid enthalpy divided by number of molecules
         dens_stderr_list = [list(map(round3, result['density'])) for result in result_list]
         eint_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['einter'])) for result in result_list]
-        hl_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['liquid enthalpy'])) for result in result_list]
+        # hl_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['liquid enthalpy'])) for result in result_list]
+        hl_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]),
+                                   [result['einter'][0] + result['kinetic energy'][0] + result['pV'][0],
+                                    result['einter'][1] + result['kinetic energy'][1] + result['pV'][1]])) for
+                          result in
+                          result_list]
         comp_stderr_list = [list(map(round3, result['compress'])) for result in result_list]
 
         dens_list = [i[0] for i in dens_stderr_list]
@@ -394,120 +420,201 @@ class Npt(GmxSimulation):
     @staticmethod
     def get_post_data(post_result, T, P, smiles_list, **kwargs) -> dict:
         from mstools.analyzer.fitting import polyval_derivative_2d, polyval, polyval_derivative, polyfit
-
-        ### Calculate with T,P-poly4. Not accurate enough, especially for expansion and compressibility
-        coeff_dens, score_dens = post_result['density-poly4']
-        coeff_eint, score_eint = post_result['einter-poly4']
-        density4, dDdT4, dDdP4 = polyval_derivative_2d(T, P, 4, coeff_dens)  # g/mL
-        einter4, dEdT4, dEdP4 = polyval_derivative_2d(T, P, 4, coeff_eint)  # kJ/mol
-        expansion4 = -1 / density4 * dDdT4  # K^-1
-        compressibility4 = 1 / density4 * dDdP4  # bar^-1
-
         import pybel
-        py_mol = pybel.readstring('smi', smiles_list[0])
-        cp_inter4 = dEdT4 * 1000  # J/mol.K
-        cp_pv4 = - py_mol.molwt * P / density4 ** 2 * dDdT4 * 0.1  # J/mol/K
-
-        ### T-poly3
-        _p_dens_list = []
-        _p_eint_list = []
-        _p_hl_list = []
-        _p_comp_list = []
-        _p_dDdT_list = []
-        _p_dEdT_list = []
-        for _p in post_result['density-t-poly3']:
-            coef, score, tmin, tmax = post_result['density-t-poly3'][str(_p)]
-            if score < 0.999 or T < tmin - 10 or T > tmax + 10:
-                continue
-
-            dens, dDdT = polyval_derivative(T, coef)
-            _p_dens_list.append([float(_p), dens])
-            _p_dDdT_list.append([float(_p), dDdT])
-
-        for _p in post_result['einter-t-poly3']:
-            coef, score, tmin, tmax = post_result['einter-t-poly3'][str(_p)]
-            if score < 0.999 or T < tmin - 10 or T > tmax + 10:
-                continue
-
-            eint, dEdT = polyval_derivative(T, coef)
-            _p_eint_list.append([float(_p), eint])
-            _p_dEdT_list.append([float(_p), dEdT])
-
-        for _p in post_result['hl-t-poly3']:
-            coef, score, tmin, tmax = post_result['hl-t-poly3'][str(_p)]
-            if score < 0.999 or T < tmin - 10 or T > tmax + 10:
-                continue
-
-            hl = polyval(T, coef)
-            _p_hl_list.append([_p, hl])
-
-        for _p in post_result['compress-t-poly3']:
-            coef, score, tmin, tmax = post_result['compress-t-poly3'][str(_p)]
-            if score < 0.95 or T < tmin - 10 or T > tmax + 10:
-                continue
-
-            _p_comp_list.append([float(_p), polyval(T, coef)])
 
         ### Default value
-        density = None
-        einter = None
-        liquid_enthalpy = None
-        hvap = None
-        cp_inter = None
-        cp_pv = None
-        expansion = None
-        compressibility = None
+        result = {}
+        molwt = 0.
+        for smiles in smiles_list:
+            py_mol = pybel.readstring('smi', smiles)
+            molwt += py_mol.molwt
 
-        if len(_p_dens_list) >= 5:
-            coef, score = polyfit(*zip(*_p_dens_list), 3)
-            _p_list = list(zip(*_p_dens_list))[0]
-            if P > min(_p_list) - 10 and P < max(_p_list) + 10:
-                density = polyval(P, coef)
+        ### Calculate with T,P-poly4. Not accurate enough, especially for expansion and compressibility
+        if post_result['density-poly4']!=None:
+            coeff_dens, score_dens = post_result['density-poly4']
+            density4, dDdT4, dDdP4 = polyval_derivative_2d(T, P, 4, coeff_dens)  # g/mL
+            expansion4 = -1 / density4 * dDdT4  # K^-1
+            compressibility4 = 1 / density4 * dDdP4  # bar^-1
+            cp_pv4 = - molwt * P / density4 ** 2 * dDdT4 * 0.1  # J/mol/K
+            ad_dict = {
+                'density-poly4-score': score_dens,
+                'density-poly4'      : density4,
+                'expansion-poly4'    : expansion4,
+                'compress-poly4'     : compressibility4,
+                'cp_pv-poly4': cp_pv4,
+            }
+            result.update(ad_dict)
+        if post_result['einter-poly4']!=None:
+            coeff_eint, score_eint = post_result['einter-poly4']
+            einter4, dEdT4, dEdP4 = polyval_derivative_2d(T, P, 4, coeff_eint)  # kJ/mol
 
-                coef, score = polyfit(*zip(*_p_dDdT_list), 3)
-                dDdT = polyval(P, coef)
+            cp_inter4 = dEdT4 * 1000  # J/mol.K
+            ad_dict = {
+                'einter-poly4-score': score_eint,
+                'einter-poly4': einter4,
+                'cp_inter-poly4': cp_inter4,
+            }
+            result.update(ad_dict)
+
+        ### T-poly3
+
+        if len(post_result['density-t-poly3'])>=5:
+            _p_dens_list = []
+            _p_dDdT_list = []
+            for _p in post_result['density-t-poly3']:
+                coef, score, tmin, tmax = post_result['density-t-poly3'][str(_p)]
+                if score < 0.999 or T < tmin - 10 or T > tmax + 10:
+                    continue
+
+                dens, dDdT = polyval_derivative(T, coef)
+                _p_dens_list.append([float(_p), dens])
+                _p_dDdT_list.append([float(_p), dDdT])
+            if len(_p_dens_list) >= 5:
+                coef, score = polyfit(*zip(*_p_dens_list), 3)
+                _p_list = list(zip(*_p_dens_list))[0]
+                if P > min(_p_list) - 10 and P < max(_p_list) + 10:
+                    density = polyval(P, coef)
+                    coef, score = polyfit(*zip(*_p_dDdT_list), 3)
+                    dDdT = polyval(P, coef)
+                    expansion = -1 / density * dDdT  # K^-1
+                    cp_pv = - molwt * P / density ** 2 * dDdT * 0.1  # J/mol/K
+                    ad_dict = {
+                        'density': density,
+                        'cp_pv': cp_pv,
+                        'expansion': expansion,
+                    }
+                    result.update(ad_dict)
+        elif str(P) in post_result['density-t-poly3'].keys():
+            coef, score, tmin, tmax = post_result['density-t-poly3'][str(P)]
+            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+                density, dDdT = polyval_derivative(T, coef)
                 expansion = -1 / density * dDdT  # K^-1
-                cp_pv = - py_mol.molwt * P / density ** 2 * dDdT * 0.1  # J/mol/K
+                cp_pv = - molwt * P / density ** 2 * dDdT * 0.1  # J/mol/K
+                ad_dict = {
+                    'density': density,
+                    'cp_pv': cp_pv,
+                    'expansion': expansion,
+                }
+                result.update(ad_dict)
 
-        if len(_p_eint_list) >= 5:
-            coef, score = polyfit(*zip(*_p_eint_list), 3)
-            _p_list = list(zip(*_p_eint_list))[0]
-            if P > min(_p_list) - 10 and P < max(_p_list) + 10:
-                einter = polyval(P, coef)
+        if len(post_result['einter-t-poly3'])>=5:
+            _p_eint_list = []
+            _p_dEdT_list = []
+            for _p in post_result['einter-t-poly3']:
+                coef, score, tmin, tmax = post_result['einter-t-poly3'][str(_p)]
+                if score < 0.999 or T < tmin - 10 or T > tmax + 10:
+                    continue
+
+                eint, dEdT = polyval_derivative(T, coef)
+                _p_eint_list.append([float(_p), eint])
+                _p_dEdT_list.append([float(_p), dEdT])
+            if len(_p_eint_list) >= 5:
+                coef, score = polyfit(*zip(*_p_eint_list), 3)
+                _p_list = list(zip(*_p_eint_list))[0]
+                if P > min(_p_list) - 10 and P < max(_p_list) + 10:
+                    einter = polyval(P, coef)
+                    hvap = 8.314 * T / 1000 - einter  # kJ/mol
+
+                    coef, score = polyfit(*zip(*_p_dEdT_list), 3)
+                    dEdT = polyval(P, coef)
+                    cp_inter = dEdT * 1000  # J/mol.K
+                    ad_dict = {
+                        'einter': einter,
+                        'hvap': hvap,
+                        'cp_inter': cp_inter,
+                    }
+                    result.update(ad_dict)
+        elif str(P) in post_result['einter-t-poly3'].keys():
+            coef, score, tmin, tmax = post_result['einter-t-poly3'][str(P)]
+            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+                einter, dEdT = polyval_derivative(T, coef)
                 hvap = 8.314 * T / 1000 - einter  # kJ/mol
-
-                coef, score = polyfit(*zip(*_p_dEdT_list), 3)
-                dEdT = polyval(P, coef)
                 cp_inter = dEdT * 1000  # J/mol.K
+                ad_dict = {
+                    'einter': einter,
+                    'hvap': hvap,
+                    'cp_inter': cp_inter,
+                }
+                result.update(ad_dict)
 
-        if len(_p_comp_list) >= 5:
-            coef, score = polyfit(*zip(*_p_comp_list), 3)
-            _p_list = list(zip(*_p_comp_list))[0]
-            if P > min(_p_list) - 10 and P < max(_p_list) + 10:
-                compressibility = polyval(P, coef)
+        if len(post_result['compress-t-poly3']) >= 5:
+            _p_comp_list = []
+            for _p in post_result['compress-t-poly3']:
+                coef, score, tmin, tmax = post_result['compress-t-poly3'][str(_p)]
+                if score < 0.95 or T < tmin - 10 or T > tmax + 10:
+                    continue
 
-        if len(_p_hl_list) >= 5:
-            coef, score = polyfit(*zip(*_p_hl_list), 3)
-            _p_list = list(zip(*_p_comp_list))[0]
-            if P > min(_p_list) - 10 and P < max(_p_list) + 10:
-                liquid_enthalpy = polyval(P, coef) # kJ/mol
+                _p_comp_list.append([float(_p), polyval(T, coef)])
+            if len(_p_comp_list) >= 5:
+                coef, score = polyfit(*zip(*_p_comp_list), 3)
+                _p_list = list(zip(*_p_comp_list))[0]
+                if P > min(_p_list) - 10 and P < max(_p_list) + 10:
+                    compressibility = polyval(P, coef)
+                    ad_dict = {
+                        'compress': compressibility,
+                    }
+                    result.update(ad_dict)
+        elif str(P) in post_result['compress-t-poly3'].keys():
+            coef, score, tmin, tmax = post_result['compress-t-poly3'][str(P)]
+            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+                compressibility = polyval(T, coef)
+                ad_dict = {
+                    'compress': compressibility,
+                }
+                result.update(ad_dict)
 
+        if len(post_result['hl-t-poly3'])>=5:
+            _p_hl_list = []
+            for _p in post_result['hl-t-poly3']:
+                coef, score, tmin, tmax = post_result['hl-t-poly3'][str(_p)]
+                if score < 0.999 or T < tmin - 10 or T > tmax + 10:
+                    continue
 
-        return {
-            'density'            : density,
-            'einter'             : einter,
-            'liquid enthalpy'    : liquid_enthalpy,
-            'hvap'               : hvap,
-            'cp_inter'           : cp_inter,
-            'cp_pv'              : cp_pv,
-            'expansion'          : expansion,
-            'compress'           : compressibility,
-            'density-poly4-score': score_dens,
-            'einter-poly4-score' : score_eint,
-            'density-poly4'      : density4,
-            'einter-poly4'       : einter4,
-            'cp_inter-poly4'     : cp_inter4,
-            'cp_pv-poly4'        : cp_pv4,
-            'expansion-poly4'    : expansion4,
-            'compress-poly4'     : compressibility4,
-        }
+                hl = polyval(T, coef)
+                _p_hl_list.append([_p, hl])
+            if len(_p_hl_list) >= 5:
+                coef, score = polyfit(*zip(*_p_hl_list), 3)
+                _p_list = list(zip(*_p_comp_list))[0]
+                if P > min(_p_list) - 10 and P < max(_p_list) + 10:
+                    liquid_enthalpy = polyval(P, coef)  # kJ/mol
+                    ad_dict = {
+                        'liquid enthalpy': liquid_enthalpy,
+                    }
+                    result.update(ad_dict)
+        elif str(P) in post_result['hl-t-poly3'].keys():
+            coef, score, tmin, tmax = post_result['hl-t-poly3'][str(P)]
+            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+                liquid_enthalpy = polyval(T, coef)
+                ad_dict = {
+                    'liquid enthalpy': liquid_enthalpy,
+                }
+                result.update(ad_dict)
+
+        if len(post_result['econ-t-poly3'])>=5:
+            _p_econ_list = []
+            for _p in post_result['econ-t-poly3']:
+                coef, score, tmin, tmax = post_result['econ-t-poly3'][str(_p)]
+                if score < 0.999 or T < tmin - 10 or T > tmax + 10:
+                    continue
+
+                econ = polyval(T, coef)
+                _p_econ_list.append([_p, econ])
+            if len(_p_econ_list) >= 5:
+                coef, score = polyfit(*zip(*_p_econ_list), 3)
+                _p_list = list(zip(*_p_comp_list))[0]
+                if P > min(_p_list) - 10 and P < max(_p_list) + 10:
+                    econ = polyval(P, coef)  # kJ/mol
+                    ad_dict = {
+                        'electrical conductivity': econ,
+                    }
+                    result.update(ad_dict)
+        elif str(P) in post_result['econ-t-poly3'].keys():
+            coef, score, tmin, tmax = post_result['econ-t-poly3'][str(P)]
+            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+                econ = polyval(T, coef)
+                ad_dict = {
+                    'electrical conductivity': econ,
+                }
+                result.update(ad_dict)
+
+        return result
