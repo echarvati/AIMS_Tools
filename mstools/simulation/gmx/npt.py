@@ -430,7 +430,7 @@ class Npt(GmxSimulation):
             molwt += py_mol.molwt
 
         ### Calculate with T,P-poly4. Not accurate enough, especially for expansion and compressibility
-        if post_result['density-poly4']!=None:
+        if post_result.get('density-poly4')!=None:
             coeff_dens, score_dens = post_result['density-poly4']
             density4, dDdT4, dDdP4 = polyval_derivative_2d(T, P, 4, coeff_dens)  # g/mL
             expansion4 = -1 / density4 * dDdT4  # K^-1
@@ -444,7 +444,7 @@ class Npt(GmxSimulation):
                 'cp_pv-poly4': cp_pv4,
             }
             result.update(ad_dict)
-        if post_result['einter-poly4']!=None:
+        if post_result.get('einter-poly4')!=None:
             coeff_eint, score_eint = post_result['einter-poly4']
             einter4, dEdT4, dEdP4 = polyval_derivative_2d(T, P, 4, coeff_eint)  # kJ/mol
 
