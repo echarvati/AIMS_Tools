@@ -429,6 +429,8 @@ class Npt(GmxSimulation):
         ### Default value
         result = {}
         molwt = 0.
+        converge_criterion = 0.6 # R value of fitting
+
         for smiles in smiles_list:
             py_mol = pybel.readstring('smi', smiles)
             molwt += py_mol.molwt
@@ -462,12 +464,15 @@ class Npt(GmxSimulation):
 
         ### T-poly3
 
+        density = None
+        cp_pv = None
+        expansion = None
         if len(post_result['density-t-poly3'])>=5:
             _p_dens_list = []
             _p_dDdT_list = []
             for _p in post_result['density-t-poly3']:
                 coef, score, tmin, tmax = post_result['density-t-poly3'][str(_p)]
-                if score < 0.999 or T < tmin - 10 or T > tmax + 10:
+                if score < converge_criterion or T < tmin - 10 or T > tmax + 10:
                     continue
 
                 dens, dDdT = polyval_derivative(T, coef)
@@ -482,31 +487,28 @@ class Npt(GmxSimulation):
                     dDdT = polyval(P, coef)
                     expansion = -1 / density * dDdT  # K^-1
                     cp_pv = - molwt * P / density ** 2 * dDdT * 0.1  # J/mol/K
-                    ad_dict = {
-                        'density': density,
-                        'cp_pv': cp_pv,
-                        'expansion': expansion,
-                    }
-                    result.update(ad_dict)
         elif str(P) in post_result['density-t-poly3'].keys():
             coef, score, tmin, tmax = post_result['density-t-poly3'][str(P)]
-            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+            if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
                 density, dDdT = polyval_derivative(T, coef)
                 expansion = -1 / density * dDdT  # K^-1
                 cp_pv = - molwt * P / density ** 2 * dDdT * 0.1  # J/mol/K
-                ad_dict = {
-                    'density': density,
-                    'cp_pv': cp_pv,
-                    'expansion': expansion,
-                }
-                result.update(ad_dict)
+        ad_dict = {
+            'density': density,
+            'cp_pv': cp_pv,
+            'expansion': expansion,
+        }
+        result.update(ad_dict)
 
+        einter = None
+        hvap = None
+        cp_inter = None
         if len(post_result['einter-t-poly3'])>=5:
             _p_eint_list = []
             _p_dEdT_list = []
             for _p in post_result['einter-t-poly3']:
                 coef, score, tmin, tmax = post_result['einter-t-poly3'][str(_p)]
-                if score < 0.999 or T < tmin - 10 or T > tmax + 10:
+                if score < converge_criterion or T < tmin - 10 or T > tmax + 10:
                     continue
 
                 eint, dEdT = polyval_derivative(T, coef)
@@ -522,30 +524,25 @@ class Npt(GmxSimulation):
                     coef, score = polyfit(*zip(*_p_dEdT_list), 3)
                     dEdT = polyval(P, coef)
                     cp_inter = dEdT * 1000  # J/mol.K
-                    ad_dict = {
-                        'einter': einter,
-                        'hvap': hvap,
-                        'cp_inter': cp_inter,
-                    }
-                    result.update(ad_dict)
         elif str(P) in post_result['einter-t-poly3'].keys():
             coef, score, tmin, tmax = post_result['einter-t-poly3'][str(P)]
-            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+            if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
                 einter, dEdT = polyval_derivative(T, coef)
                 hvap = 8.314 * T / 1000 - einter  # kJ/mol
                 cp_inter = dEdT * 1000  # J/mol.K
-                ad_dict = {
-                    'einter': einter,
-                    'hvap': hvap,
-                    'cp_inter': cp_inter,
-                }
-                result.update(ad_dict)
+        ad_dict = {
+            'einter': einter,
+            'hvap': hvap,
+            'cp_inter': cp_inter,
+        }
+        result.update(ad_dict)
 
+        compressibility = None
         if len(post_result['compress-t-poly3']) >= 5:
             _p_comp_list = []
             for _p in post_result['compress-t-poly3']:
                 coef, score, tmin, tmax = post_result['compress-t-poly3'][str(_p)]
-                if score < 0.95 or T < tmin - 10 or T > tmax + 10:
+                if score < converge_criterion or T < tmin - 10 or T > tmax + 10:
                     continue
 
                 _p_comp_list.append([float(_p), polyval(T, coef)])
@@ -554,24 +551,21 @@ class Npt(GmxSimulation):
                 _p_list = list(zip(*_p_comp_list))[0]
                 if P > min(_p_list) - 10 and P < max(_p_list) + 10:
                     compressibility = polyval(P, coef)
-                    ad_dict = {
-                        'compress': compressibility,
-                    }
-                    result.update(ad_dict)
         elif str(P) in post_result['compress-t-poly3'].keys():
             coef, score, tmin, tmax = post_result['compress-t-poly3'][str(P)]
-            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+            if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
                 compressibility = polyval(T, coef)
-                ad_dict = {
-                    'compress': compressibility,
-                }
-                result.update(ad_dict)
+        ad_dict = {
+            'compress': compressibility,
+        }
+        result.update(ad_dict)
 
+        liquid_enthalpy = None
         if len(post_result['hl-t-poly3'])>=5:
             _p_hl_list = []
             for _p in post_result['hl-t-poly3']:
                 coef, score, tmin, tmax = post_result['hl-t-poly3'][str(_p)]
-                if score < 0.999 or T < tmin - 10 or T > tmax + 10:
+                if score < converge_criterion or T < tmin - 10 or T > tmax + 10:
                     continue
 
                 hl = polyval(T, coef)
@@ -581,24 +575,21 @@ class Npt(GmxSimulation):
                 _p_list = list(zip(*_p_comp_list))[0]
                 if P > min(_p_list) - 10 and P < max(_p_list) + 10:
                     liquid_enthalpy = polyval(P, coef)  # kJ/mol
-                    ad_dict = {
-                        'liquid enthalpy': liquid_enthalpy,
-                    }
-                    result.update(ad_dict)
         elif str(P) in post_result['hl-t-poly3'].keys():
             coef, score, tmin, tmax = post_result['hl-t-poly3'][str(P)]
-            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+            if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
                 liquid_enthalpy = polyval(T, coef)
-                ad_dict = {
-                    'liquid enthalpy': liquid_enthalpy,
-                }
-                result.update(ad_dict)
+        ad_dict = {
+            'liquid enthalpy': liquid_enthalpy,
+        }
+        result.update(ad_dict)
 
+        econ = None
         if len(post_result['econ-t-poly3'])>=5:
             _p_econ_list = []
             for _p in post_result['econ-t-poly3']:
                 coef, score, tmin, tmax = post_result['econ-t-poly3'][str(_p)]
-                if score < 0.999 or T < tmin - 10 or T > tmax + 10:
+                if score < converge_criterion or T < tmin - 10 or T > tmax + 10:
                     continue
 
                 econ = polyval(T, coef)
@@ -608,17 +599,13 @@ class Npt(GmxSimulation):
                 _p_list = list(zip(*_p_comp_list))[0]
                 if P > min(_p_list) - 10 and P < max(_p_list) + 10:
                     econ = polyval(P, coef)  # kJ/mol
-                    ad_dict = {
-                        'electrical conductivity': econ,
-                    }
-                    result.update(ad_dict)
         elif str(P) in post_result['econ-t-poly3'].keys():
             coef, score, tmin, tmax = post_result['econ-t-poly3'][str(P)]
-            if not (score < 0.999 or T < tmin - 10 or T > tmax + 10):
+            if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
                 econ = polyval(T, coef)
-                ad_dict = {
-                    'electrical conductivity': econ,
-                }
-                result.update(ad_dict)
+        ad_dict = {
+            'electrical conductivity': econ,
+        }
+        result.update(ad_dict)
 
         return result
