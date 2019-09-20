@@ -310,7 +310,11 @@ class Npt(GmxSimulation):
             _t_econ_coeff, _t_econ_score = polyfit(_t_list, _econ_list, 3)
 
             p = str(P_list[0])
-            t_dens_poly3 = t_eint_poly3 = t_hl_poly3 = t_comp_poly3 = t_econ_poly3 = {}
+            t_dens_poly3 = {}
+            t_eint_poly3 = {}
+            t_hl_poly3 = {}
+            t_comp_poly3 = {}
+            t_econ_poly3 = {}
             t_dens_poly3[p] = [list(map(round3, _t_dens_coeff)), round3(_t_dens_score), min(_t_list), max(_t_list)]
             t_eint_poly3[p] = [list(map(round3, _t_eint_coeff)), round3(_t_eint_score), min(_t_list), max(_t_list)]
             t_hl_poly3[p]   = [list(map(round3, _t_hl_coeff  )), round3(_t_hl_score  ), min(_t_list), max(_t_list)]
