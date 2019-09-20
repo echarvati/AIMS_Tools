@@ -429,7 +429,7 @@ class Npt(GmxSimulation):
         ### Default value
         result = {}
         molwt = 0.
-        converge_criterion = 0.6 # R value of fitting
+        converge_criterion = 0.95 # R value of fitting
 
         for smiles in smiles_list:
             py_mol = pybel.readstring('smi', smiles)
