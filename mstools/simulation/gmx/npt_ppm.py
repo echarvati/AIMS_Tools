@@ -332,27 +332,48 @@ class NptPPM(GmxSimulation):
         def round3(x):
             return float('%.3e' % x)
 
-        vis_score_list = [list(map(round3, [result['viscosity'], result['score']])) for result in result_list]
-        vis_list = [i[0] for i in vis_score_list]
-        t_p_vis_score_list = list(map(list, zip(T_list, P_list, vis_score_list)))
-        t_p_vis_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
-        t_p_vis_list = list(map(list, zip(T_list, P_list, vis_list)))
-        t_p_vis_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
-        p_coeff_score_list = []
-        from ...analyzer.fitting import fit_VTF
-        import numpy as np
-        for p in sorted(p_set):
-            _t_list = [element[0] for element in t_p_vis_list if element[1] == p]
-            _vis_list = [element[2] for element in t_p_vis_list if element[1] == p]
+        if len(p_set)==1:
+            vis_score_list = [list(map(round3, [result['viscosity'], result['score']])) for result in result_list]
+            vis_list = [i[0] for i in vis_score_list]
+            t_p_vis_score_list = list(map(list, zip(T_list, P_list, vis_score_list)))
+            t_p_vis_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+            t_p_vis_list = list(map(list, zip(T_list, P_list, vis_list)))
+            t_p_vis_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+            p_coeff_score_list = []
+            from ...analyzer.fitting import fit_VTF
+            import numpy as np
+            _t_list = [element[0] for element in t_p_vis_list]
+            _vis_list = [element[2] for element in t_p_vis_list]
             _y_fit = np.log(_vis_list)
-            coeff, score = fit_VTF(_t_list, _y_fit)
-            p_coeff_score_list.append([p, coeff, score])
+            _t_vis_coeff, _t_vis_score = fit_VTF(_t_list, _y_fit)
+            # p_coeff_score_list.append([p, coeff, score])
 
-        post_result = {
-            't_p_vis_score_list': t_p_vis_score_list,
-            'p_coeff_score_list': p_coeff_score_list # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))*1000
-        }
-        return post_result, 'not important'
+            p = str(P_list[0])
+            t_vis_VFT = {}
+            t_min = _t_vis_coeff[1]
+            t_max = 1000
+            t_vis_VFT[p] = [list(map(round3, _t_vis_coeff)), round3(_t_vis_score), t_min, t_max]
+
+            post_result = {
+                't_p_vis_score_list': t_p_vis_score_list,
+                'vis-t-VFT' : t_vis_VFT, # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))*1000
+                # 'p_coeff_score_list': p_coeff_score_list  # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))*1000
+            }
+            return post_result, 'not important'
+
+    @staticmethod
+    def get_post_data(post_result, T, P, smiles_list, **kwargs) -> dict:
+        import numpy as np
+        converge_criterion = 0.95  # R value of fitting
+        if len(post_result.get('vis-t-VFT'))==1:
+            coef, score, tmin, tmax = post_result['vis-t-VFT'][str(P)]
+            if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
+                vis = np.exp(coef[0]+coef[2]/(T-coef[1]))*1000
+            return {
+                'viscosity': vis
+            }
+        else:
+            return None
 
 
 
