@@ -356,8 +356,8 @@ class NptPPM(GmxSimulation):
 
             post_result = {
                 't_p_vis_score_list': t_p_vis_score_list,
-                'vis-t-VFT' : t_vis_VFT, # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))*1000
-                # 'p_coeff_score_list': p_coeff_score_list  # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))*1000
+                'vis-t-VFT' : t_vis_VFT, # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))
+                # 'p_coeff_score_list': p_coeff_score_list  # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))
             }
             return post_result, 'not important'
 
@@ -368,7 +368,7 @@ class NptPPM(GmxSimulation):
         if len(post_result.get('vis-t-VFT'))==1:
             coef, score, tmin, tmax = post_result['vis-t-VFT'][str(P)]
             if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
-                vis = np.exp(coef[0]+coef[2]/(T-coef[1]))*1000
+                vis = np.exp(coef[0]+coef[2]/(T-coef[1]))
             return {
                 'viscosity': vis
             }
