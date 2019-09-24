@@ -32,7 +32,7 @@ class NptPPM(GmxSimulation):
             self.export(ppf=ppf)
 
     def prepare(self, prior_job_dir=None, gro='conf.gro', top='topol.top', T=298, P=1, jobname=None,
-                dt=0.001, nst_eq=int(1E5), nst_edr=50, replicate=None,
+                dt=0.001, nst_eq=int(1E5), nst_edr=500, replicate=None,
                 **kwargs) -> [str]:
         self.dt = dt
         if prior_job_dir is None:
