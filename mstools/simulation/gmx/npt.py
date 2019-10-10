@@ -115,8 +115,10 @@ class Npt(GmxSimulation):
 
         if info==None:
             extend = 500
-        else:
+        elif len(info.get('continue_n')) == 1:
             extend = info.get('continue_n')[0] * dt
+        else:
+            raise Exception('npt.extend(), info.get(\'continue_n\') must be 1 dimensional')
         self.gmx.extend_tpr('npt.tpr', extend, silent=True)
         # Extending NPT production
         cmd = self.gmx.mdrun(name='npt', nprocs=nprocs, extend=True, get_cmd=True)
