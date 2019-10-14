@@ -312,8 +312,8 @@ class NptPPM(GmxSimulation):
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
 
         coef_, score = polyfit(a_list, vis_list, 1)
-        c1, s1 = polyfit([a_list[0], a_list[-1]], [vis_list[0] + stderr_list[0], vis_list[-1] - stderr_list[-1]], 1)
-        c2, s2 = polyfit([a_list[0], a_list[-1]], [vis_list[0] - stderr_list[0], vis_list[-1] + stderr_list[-1]], 1)
+        c1, s1 = polyfit(a_list, (np.array(vis_list) + np.array(stderr_list)).tolist(), 1)
+        c2, s1 = polyfit(a_list, (np.array(vis_list) - np.array(stderr_list)).tolist(), 1)
         ad_dict = {
             'viscosity': coef_[0],
             'vis-stderr': (c1[0] - c2[0]) / 2,
