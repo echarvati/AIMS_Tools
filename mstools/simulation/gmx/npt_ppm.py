@@ -88,6 +88,7 @@ class NptPPM(GmxSimulation):
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
+    # extend function used when EXTEND_GMX_MULTI = False
     def extend(self, jobname=None, sh=None, info=None, dt=0.001) -> [str]:
         '''
         extend simulation for 500 ps
@@ -104,6 +105,10 @@ class NptPPM(GmxSimulation):
 
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure, sh=sh)
         return commands
+
+    # extend function used when EXTEND_GMX_MULTI = True
+    # def extend_multi(self):
+
 
     def ppm_is_converged(self, trj):
         traj = Trajectory(trj, readmass=True, COM=True, head_and_tail=True)
@@ -307,8 +312,11 @@ class NptPPM(GmxSimulation):
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
 
         coef_, score = polyfit(a_list, vis_list, 1)
+        c1, s1 = polyfit([a_list[0], a_list[-1]], [vis_list[0] + stderr_list[0], vis_list[-1] - stderr_list[-1]], 1)
+        c2, s2 = polyfit([a_list[0], a_list[-1]], [vis_list[0] - stderr_list[0], vis_list[-1] + stderr_list[-1]], 1)
         ad_dict = {
             'viscosity': coef_[0],
+            'vis-stderr': (c1[0] - c2[-1]) / 2,
             'score': score,
             'vis_list': vis_list,
             'stderr_list': stderr_list,
