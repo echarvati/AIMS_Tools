@@ -316,7 +316,7 @@ class NptPPM(GmxSimulation):
         c2, s2 = polyfit([a_list[0], a_list[-1]], [vis_list[0] - stderr_list[0], vis_list[-1] + stderr_list[-1]], 1)
         ad_dict = {
             'viscosity': coef_[0],
-            'vis-stderr': (c1[0] - c2[-1]) / 2,
+            'vis-stderr': (c1[0] - c2[0]) / 2,
             'score': score,
             'vis_list': vis_list,
             'stderr_list': stderr_list,
