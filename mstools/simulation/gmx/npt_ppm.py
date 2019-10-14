@@ -288,8 +288,6 @@ class NptPPM(GmxSimulation):
                         if more_info:
                             info_dict['more_info'].append(result.get('more_info'))
                         os.remove('%s_trj.gro' % name_ppm)
-                else:
-                    raise Exception('for ppm.analyze you must use check_converge=True')
             ###
 
             inv_series = df['1/Viscosity']
