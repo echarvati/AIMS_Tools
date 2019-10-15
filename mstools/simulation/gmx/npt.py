@@ -108,17 +108,31 @@ class Npt(GmxSimulation):
 
     def extend(self, jobname=None, sh=None, info=None, dt=0.002) -> [str]:
         '''
+        if info == none, extend simulation for 500 ps
+        '''
+
+        if info==None:
+            continue_n = 500 / dt
+        elif len(info.get('continue_n')) == 1:
+            continue_n = info.get('continue_n')[0]
+        else:
+            raise Exception('npt.extend(), info.get(\'continue_n\') must be 1 dimensional')
+        commands = self.extend_single(jobname=jobname, sh=sh, name=info.get('name')[0], continue_n=continue_n, dt=dt)
+        return commands
+
+    def extend_single(self, jobname=None, sh=None, name=None, continue_n=None, dt=0.002) -> [str]:
+        '''
         extend simulation for 500 ps
         '''
         nprocs = self.jobmanager.nprocs
         commands = []
 
-        if info==None:
-            extend = 500
-        elif len(info.get('continue_n')) == 1:
-            extend = info.get('continue_n')[0] * dt
-        else:
-            raise Exception('npt.extend(), info.get(\'continue_n\') must be 1 dimensional')
+        if continue_n == None:
+            raise Exception('npt.extend_single(): continue_n cannot be None\n')
+        if name != 'npt':
+            raise Exception('npt.extend_single(): name must be npt\n')
+
+        extend = continue_n * dt
         self.gmx.extend_tpr('npt.tpr', extend, silent=True)
         # Extending NPT production
         cmd = self.gmx.mdrun(name='npt', nprocs=nprocs, extend=True, get_cmd=True)

@@ -93,14 +93,16 @@ class NptPPM(GmxSimulation):
         '''
         extend simulation for 500 ps
         '''
+        if info == None:
+            raise Exception('npt_ppm.extend(): info cannot be none')
         nprocs = self.jobmanager.nprocs
         commands = []
-        for i, tpr in enumerate(info.get('name')):
+        for i, name in enumerate(info.get('name')):
             if info.get('continue')[i]:
                 extend = info.get('continue_n')[i] * dt
-                self.gmx.extend_tpr('%s.tpr' % tpr, extend, silent=True)
+                self.gmx.extend_tpr('%s.tpr' % name, extend, silent=True)
                 # Extending PPM production
-                cmd = self.gmx.mdrun(name=tpr, nprocs=nprocs, extend=True, get_cmd=True)
+                cmd = self.gmx.mdrun(name=name, nprocs=nprocs, extend=True, get_cmd=True)
                 commands.append(cmd)
 
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure, sh=sh)
@@ -108,7 +110,24 @@ class NptPPM(GmxSimulation):
 
     # extend function used when EXTEND_GMX_MULTI = True
     # def extend_multi(self):
+    def extend_single(self, jobname=None, sh=None, name=None, continue_n=None, dt=0.001) -> [str]:
+        '''
+        extend simulation for 500 ps
+        '''
+        if continue_n == None:
+            raise Exception('npt_ppm.extend_single(): continue_n cannot be None\n')
+        if name == None:
+            raise Exception('npt_ppm.extend_single(): name cannot be None\n')
+        nprocs = self.jobmanager.nprocs
+        commands = []
+        extend = continue_n * dt
+        self.gmx.extend_tpr('%s.tpr' % name, extend, silent=True)
+        # Extending PPM production
+        cmd = self.gmx.mdrun(name=name, nprocs=nprocs, extend=True, get_cmd=True)
+        commands.append(cmd)
 
+        self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure, sh=sh)
+        return commands
 
     def ppm_is_converged(self, trj):
         traj = Trajectory(trj, readmass=True, COM=True, head_and_tail=True)

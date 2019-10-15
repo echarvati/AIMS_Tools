@@ -10,6 +10,12 @@ def get_para(T=298, eps=None, sigma=None, lamb=None):
     sigma = (2 * f) ** (-1/6) * sigma
     return eps, sigma
 
+def get_para_298(T=298, eps=None, sigma=None, lamb=None):
+    f = 1 + lamb * 0.01 * (T - 298)
+    eps /= (f ** 2 * 4.184)
+    sigma /= ((2 * f) ** (-1 / 6))
+    return sigma / 2**(1/6), eps * 16 / 27
+
 def get_canonical_smiles(smiles):
     py_mol = pybel.readstring("smi", smiles)
     return py_mol.write('can', opt={'n': None}).strip()
