@@ -323,7 +323,7 @@ class NptPPM(GmxSimulation):
             stderr_list.append(vis_and_stderr[1])
             if info_dict.get('failed')[-1]==False and info_dict.get('continue')[-1]==False and vis_and_stderr[1]/vis_and_stderr[0]>0.1:
                 info_dict['continue'][-1] = True
-                info_dict['continue_n'][-1] = int(5e6)
+                info_dict['continue_n'][-1] = int(1e7)
                 info_dict['reason'][-1] = 'error bar too large for viscosity calculation'
         # if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
