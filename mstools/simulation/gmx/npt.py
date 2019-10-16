@@ -147,7 +147,7 @@ class Npt(GmxSimulation):
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure, sh=sh)
         return commands
 
-    def analyze(self, check_converge=True, charge_list=None, n_mol_list=None, **kwargs):
+    def analyze(self, check_converge=True, charge_list=None, n_mol_list=None, cutoff_time=7777, **kwargs):
         import numpy as np
         from ...panedr import edr_to_df
 
@@ -162,7 +162,7 @@ class Npt(GmxSimulation):
         potential_series = df.Potential
         density_series = df.Density
         t_real = df.Temperature.mean()
-        length = potential_series.index[-1]
+        length = potential_series.index[-1] # unit: ps, cutoff_time = 7777 ps
 
         df_hvap = edr_to_df('hvap.edr')
         einter_series = (df_hvap.Potential)
@@ -182,23 +182,52 @@ class Npt(GmxSimulation):
                 p = pv.kinetic_energy.distribution(data, strict=True, verbosity=0)
             except Exception as e:
                 print(repr(e))
+
         if p < 0.01:
-            info_dict.update({'warning': 'KS test for kinetic energy failed: p<0.01'})
+            if length > cutoff_time:
+                info_dict.update({'warning: ': 'KS test for kinetic energy failed: p<0.01'})
+            else:
+                info_dict['failed'].append(False)
+                info_dict['continue'].append(True)
+                info_dict['continue_n'].append(2.5e5)
+                info_dict['reason'].append('KS test for kinetic energy failed: p<0.01')
+                return info_dict
         elif p < 0.05:
-            info_dict.update({'warning': 'KS test for kinetic energy failed: 0.01 < p < 0.05'})
+            if length > cutoff_time:
+                info_dict.update({'warning: ': 'KS test for kinetic energy failed: 0.01 < p < 0.05'})
+            else:
+                info_dict['failed'].append(False)
+                info_dict['continue'].append(True)
+                info_dict['continue_n'].append(2.5e5)
+                info_dict['reason'].append('KS test for kinetic energy failed: 0.01 < p < 0.05')
+                return info_dict
 
         ### Check structure freezing using Density
         if density_series.min() / 1000 < 0.1:  # g/mL
-            info_dict['failed'].append(True)
-            info_dict['reason'].append('vaporize')
-            return info_dict
+            if length > cutoff_time:
+                info_dict['failed'].append(True)
+                info_dict['reason'].append('vaporize')
+                return info_dict
+            else:
+                info_dict['failed'].append(False)
+                info_dict['continue'].append(True)
+                info_dict['continue_n'].append(2.5e5)
+                info_dict['reason'].append('vaporize')
+                return info_dict
 
         ### Check structure freezing using Diffusion of COM of molecules. Only use last 400 ps data
         diffusion, _ = self.gmx.diffusion('npt.xtc', 'npt.tpr', mol=True, begin=length - 400)
         if diffusion < 1E-8:  # cm^2/s
-            info_dict['failed'].append(True)
-            info_dict['reason'].append('freeze')
-            return info_dict
+            if length > cutoff_time:
+                info_dict['failed'].append(True)
+                info_dict['reason'].append('freeze')
+                return info_dict
+            else:
+                info_dict['failed'].append(False)
+                info_dict['continue'].append(True)
+                info_dict['continue_n'].append(2.5e5)
+                info_dict['reason'].append('freeze')
+                return info_dict
 
         ### Check convergence
         if check_converge:
@@ -210,11 +239,14 @@ class Npt(GmxSimulation):
             _, when_dens = is_converged(density_series, frac_min=0)
             when = max(when_pe, when_dens)
             if when > length * 0.5:
-                info_dict['failed'].append(False)
-                info_dict['continue'].append(True)
-                info_dict['continue_n'].append(2.5e5)
-                info_dict['reason'].append('PE and density not converged')
-                return info_dict
+                if length > cutoff_time:
+                    info_dict.update({'warning: ': 'PE and density not converged'})
+                else:
+                    info_dict['failed'].append(False)
+                    info_dict['continue'].append(True)
+                    info_dict['continue_n'].append(2.5e5)
+                    info_dict['reason'].append('PE and density not converged')
+                    return info_dict
         else:
             when = 0
 
@@ -239,10 +271,13 @@ class Npt(GmxSimulation):
             self.gmx.get_properties_stderr('npt.edr',
                                            ['Temperature', 'Pressure', 'Potential', 'Density', 'Volume', 'Kinetic-En.', 'Total-Energy', 'pV'],
                                            begin=when)
-        info_dict['failed'].append(False)
-        info_dict['continue'].append(False)
-        info_dict['reason'].append('converge')
-        if charge_list!=None and n_mol_list!=None and set(charge_list)!={0}:
+        if info_dict['failed'] == []:
+            info_dict['failed'].append(False)
+        if info_dict['continue'] == []:
+            info_dict['continue'].append(False)
+        if info_dict['reason'] == []:
+            info_dict['reason'].append('converge')
+        if charge_list != None and n_mol_list != None and set(charge_list)!={0}:
             econ = 0.
             econ_stderr = 0.
             for i, charge in enumerate(charge_list):

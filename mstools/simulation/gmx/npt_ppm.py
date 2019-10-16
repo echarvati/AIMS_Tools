@@ -13,10 +13,10 @@ class NptPPM(GmxSimulation):
         self.procedure = 'npt-ppm'
         self.dt = 0.001
         self.n_atoms_default = 6000
-        self.amplitudes_steps = amplitudes_steps or OrderedDict([(0.010, int(9.0e6)),
-                                                                 (0.020, int(6.0e6)),
+        self.amplitudes_steps = amplitudes_steps or OrderedDict([(0.010, int(4.5e6)),
+                                                                 (0.020, int(3.0e6)),
                                                                  (0.030, int(2.0e6)),
-                                                                 (0.040, int(2.0e6)),
+                                                                 (0.040, int(1.0e6)),
                                                                  # (0.050, int(1.0e6)),
                                                                  ])
         self.logs = ['ppm-%.3f.log' % ppm for ppm in self.amplitudes_steps.keys()]
@@ -170,19 +170,19 @@ class NptPPM(GmxSimulation):
                 M3 += frame.mass[i]
                 n3 += 1
         if n1 == 0 or n2 == 0 or n3 == 0:
-            if nst > 1.4e7:
+            if nst > 2.0e7:
                 return {
                 'failed': True,
-                'reason': 'the viscosity of this liquid is too high',
+                'reason': 'the viscosity of this liquid is too high, set this job failed',
                 'continue': False,
                 'continue_n': 0
             }
             else:
                 return {
                 'failed': False,
-                'reason': None,
+                'reason': 'the viscosity of this liquid is too high, continue this job',
                 'continue': True,
-                'continue_n': int(9.0e6)
+                'continue_n': int(1.0e7)
             }
         X1 /= M1; Y1 /= M1; Z1 /= M1; n1 /= frame.atom_number
         X2 /= M2; Y2 /= M2; Z2 /= M2; n2 /= frame.atom_number
@@ -219,7 +219,7 @@ class NptPPM(GmxSimulation):
             rst3 = nst / (-X3) * converge_criterion - nst
         rst = max(rst1, rst2, rst3)
         rst = int(math.ceil(rst / 1.0e6) * 1.0e6)
-        if rst > 5e8 and nst > 1.4e7:
+        if rst > 5e8 and nst > 2.0e7:
             info_dict = {
                 'failed': True,
                 'reason': 'the viscosity of this liquid is too high, need approximately %i additional step to converge' % (rst),
@@ -231,7 +231,7 @@ class NptPPM(GmxSimulation):
                 'failed': False,
                 'reason': 'not converged',
                 'continue': True,
-                'continue_n': min(rst, int(2.0e7))
+                'continue_n': min(rst, int(1.0e7))
             }
         if rst == 0:
             info_dict['continue'] = False
