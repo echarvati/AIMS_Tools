@@ -254,7 +254,8 @@ class NptPPM(GmxSimulation):
             'reason': [],
             'name': [],
             'warning': [],
-            'more_info': []
+            'more_info': [],
+            'length': []
         }
         for ppm in self.amplitudes_steps.keys():
             name_ppm = 'ppm-%.3f' % ppm
@@ -265,13 +266,15 @@ class NptPPM(GmxSimulation):
                 info_dict['reason'].append('file do not exists')
                 continue
 
-            info_dict['name'].append(name_ppm)
             df = edr_to_df('%s.edr' % name_ppm)
 
             # density check
             density_series = df.Density
             potential_series = df.Potential
             length = potential_series.index[-1]
+
+            info_dict['name'].append(name_ppm)
+            info_dict['length'].append(length)
             ### Check structure freezing using Density
             if density_series.min() / 1000 < 0.1:  # g/mL
                 info_dict['failed'].append(True)
