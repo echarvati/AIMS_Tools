@@ -248,14 +248,16 @@ class NptPPM(GmxSimulation):
         vis_list = []
         stderr_list = []
         info_dict = {
+            'name': [],
+            'length': [],
             'failed': [],
             'continue': [],
             'continue_n': [],
+        }
+        warn_dict = {
             'reason': [],
-            'name': [],
             'warning': [],
             'more_info': [],
-            'length': []
         }
         for ppm in self.amplitudes_steps.keys():
             name_ppm = 'ppm-%.3f' % ppm
@@ -263,7 +265,7 @@ class NptPPM(GmxSimulation):
                 info_dict['failed'].append(True)
                 info_dict['continue'].append(False)
                 info_dict['continue_n'].append(0)
-                info_dict['reason'].append('file do not exists')
+                warn_dict['reason'].append('file do not exists')
                 continue
 
             df = edr_to_df('%s.edr' % name_ppm)
@@ -280,7 +282,7 @@ class NptPPM(GmxSimulation):
                 info_dict['failed'].append(True)
                 info_dict['continue'].append(False)
                 info_dict['continue_n'].append(0)
-                info_dict['reason'].append('vaporize')
+                warn_dict['reason'].append('vaporize')
             ### Check convergence
             else:
                 if check_converge:
@@ -294,11 +296,11 @@ class NptPPM(GmxSimulation):
                     if when > length * 0.5:
                         info_dict['failed'].append(False)
                         info_dict['continue'].append(True)
-                        info_dict['continue_n'].append(self.amplitudes_steps[ppm])
-                        info_dict['reason'].append('PE and density not converged')
-                        info_dict['warning'].append(None)
+                        info_dict['continue_n'].append(int(5.0e6))
+                        warn_dict['reason'].append('PE and density not converged')
+                        warn_dict['warning'].append(None)
                         if more_info:
-                            info_dict['more_info'].append(None)
+                            warn_dict['more_info'].append(None)
                     else:
                         self.gmx.trjconv('%s.tpr' % name_ppm, '%s.xtc' % name_ppm, '%s_trj.gro' % name_ppm,
                                          skip=10, pbc_nojump=True, silent=True)
@@ -306,9 +308,9 @@ class NptPPM(GmxSimulation):
                         info_dict['failed'].append(result.get('failed'))
                         info_dict['continue'].append(result.get('continue'))
                         info_dict['continue_n'].append(result.get('continue_n'))
-                        info_dict['reason'].append(result.get('reason'))
+                        warn_dict['reason'].append(result.get('reason'))
                         if more_info:
-                            info_dict['more_info'].append(result.get('more_info'))
+                            warn_dict['more_info'].append(result.get('more_info'))
                         os.remove('%s_trj.gro' % name_ppm)
             ###
 
@@ -327,21 +329,22 @@ class NptPPM(GmxSimulation):
             if info_dict.get('failed')[-1]==False and info_dict.get('continue')[-1]==False and vis_and_stderr[1]/vis_and_stderr[0]>0.1:
                 info_dict['continue'][-1] = True
                 info_dict['continue_n'][-1] = int(1e7)
-                info_dict['reason'][-1] = 'error bar too large for viscosity calculation'
+                warn_dict['reason'][-1] = 'error bar too large for viscosity calculation'
         # if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
 
         coef_, score = polyfit(a_list, vis_list, 1)
         c1, s1 = polyfit(a_list, (np.array(vis_list) + np.array(stderr_list)).tolist(), 1)
         c2, s1 = polyfit(a_list, (np.array(vis_list) - np.array(stderr_list)).tolist(), 1)
-        ad_dict = {
+        vis_dict = {
             'viscosity': coef_[0],
             'vis-stderr': (c1[0] - c2[0]) / 2,
             'score': score,
             'vis_list': vis_list,
             'stderr_list': stderr_list,
         }
-        info_dict.update(ad_dict)
+        info_dict.update(vis_dict)
+        info_dict.update(warn_dict)
 
         return info_dict
 
