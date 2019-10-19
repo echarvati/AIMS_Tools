@@ -326,10 +326,15 @@ class NptPPM(GmxSimulation):
             vis_and_stderr = [np.mean(vis_blocks), np.std(vis_blocks, ddof=1) / math.sqrt(len(vis_blocks))]
             vis_list.append(vis_and_stderr[0])
             stderr_list.append(vis_and_stderr[1])
-            if info_dict.get('failed')[-1]==False and info_dict.get('continue')[-1]==False and vis_and_stderr[1]/vis_and_stderr[0]>0.1:
+            if info_dict.get('failed')[-1] == False and info_dict.get('continue')[-1] == False and vis_and_stderr[1] / vis_and_stderr[0] > 0.1:
                 info_dict['continue'][-1] = True
                 info_dict['continue_n'][-1] = int(1e7)
                 warn_dict['reason'][-1] = 'error bar too large for viscosity calculation'
+            if info_dict.get('continue')[-1] == True and info_dict.get('length')[-1] > 1.0e5:
+                info_dict['failed'][-1] = True
+                info_dict['continue'][-1] = False
+                info_dict['continue_n'][-1] = 0
+                warn_dict['reason'][-1] = 'simulation time exceed 1.0e5 ps, failed'
         # if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
 
