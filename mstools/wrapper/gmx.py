@@ -90,7 +90,7 @@ class GMX:
 
     def prepare_mdp_from_template(self, template, mdp_out='grompp.mdp', T=298, P=1, nsteps=10000, dt=0.001, TANNEAL=800,
                                   nstenergy=100, nstxout=0, nstvout=0, nstxtcout=10000, xtcgrps='System',
-                                  restart=False, tcoupl='langevin', pcoupl='parrinello-rahman',
+                                  restart=False, tcoupl='langevin', pcoupl='parrinello-rahman', gen_seed=-1,
                                   constraints='h-bonds', ppm=0, dielectric=None):
         template = os.path.join(GMX.TEMPLATE_DIR, template)
         if not os.path.exists(template):
@@ -139,7 +139,7 @@ class GMX:
             .replace('%dt%', str(dt)).replace('%nstenergy%', str(nstenergy)) \
             .replace('%nstxout%', str(nstxout)).replace('%nstvout%', str(nstvout)) \
             .replace('%nstxtcout%', str(nstxtcout)).replace('%xtcgrps%', str(xtcgrps)) \
-            .replace('%genvel%', genvel).replace('%continuation%', continuation) \
+            .replace('%genvel%', genvel).replace('%seed%', str(gen_seed)).replace('%continuation%', continuation) \
             .replace('%integrator%', integrator).replace('%tcoupl%', tcoupl).replace('%tau-t%', tau_t) \
             .replace('%pcoupl%', pcoupl).replace('%tau-p%', tau_p) \
             .replace('%constraints%', constraints).replace('%TANNEAL%', str(TANNEAL)).replace('%ppm%', str(ppm)) \
