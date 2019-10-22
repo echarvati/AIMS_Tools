@@ -4,8 +4,9 @@ import math
 from collections import OrderedDict
 
 from .gmx import GmxSimulation
-from ...analyzer import is_converged, block_average, average_of_blocks
+from ...analyzer import is_converged, average_of_blocks
 from ..trajectory import Trajectory
+from ...utils import get_last_line
 
 class NptPPM(GmxSimulation):
     def __init__(self, amplitudes_steps=None, **kwargs):
@@ -19,7 +20,8 @@ class NptPPM(GmxSimulation):
                                                                  (0.040, int(1.0e6)),
                                                                  # (0.050, int(1.0e6)),
                                                                  ])
-        self.logs = ['ppm-%.3f.log' % ppm for ppm in self.amplitudes_steps.keys()]
+        # self.logs = ['ppm-%.3f.log' % ppm for ppm in self.amplitudes_steps.keys()]
+        self.log = ['ppm-0.010.log', 'ppm-0.020.log']
 
     def build(self, export=True, ppf=None):
         print('Build coordinates using Packmol: %s molecules ...' % self.n_mol_list)
@@ -261,11 +263,19 @@ class NptPPM(GmxSimulation):
         }
         for ppm in self.amplitudes_steps.keys():
             name_ppm = 'ppm-%.3f' % ppm
+            log = name_ppm + '.log'
+            last_line = get_last_line(log)
             if not os.path.exists('%s.edr' % name_ppm):
                 info_dict['failed'].append(True)
                 info_dict['continue'].append(False)
                 info_dict['continue_n'].append(0)
-                warn_dict['reason'].append('file do not exists')
+                warn_dict['reason'].append('%s.edr do not exists' % (name_ppm))
+                continue
+            if not last_line.startswith('Finished mdrun'):
+                info_dict['failed'].append(True)
+                info_dict['continue'].append(False)
+                info_dict['continue_n'].append(0)
+                warn_dict['reason'].append('%s.log ended abnormally' % (log))
                 continue
 
             df = edr_to_df('%s.edr' % name_ppm)
@@ -322,19 +332,23 @@ class NptPPM(GmxSimulation):
             # use block average to estimate stderr, because 1/viscosity fluctuate heavily
             inv_blocks = average_of_blocks(inv_series.loc[when:])
             vis_blocks = [1000 / inv for inv in inv_blocks]  # convert Pa*s to cP
-            a_list.append(ppm)
             vis_and_stderr = [np.mean(vis_blocks), np.std(vis_blocks, ddof=1) / math.sqrt(len(vis_blocks))]
-            vis_list.append(vis_and_stderr[0])
-            stderr_list.append(vis_and_stderr[1])
+
             if info_dict.get('failed')[-1] == False and info_dict.get('continue')[-1] == False and vis_and_stderr[1] / vis_and_stderr[0] > 0.1:
                 info_dict['continue'][-1] = True
                 info_dict['continue_n'][-1] = int(1e7)
                 warn_dict['reason'][-1] = 'error bar too large for viscosity calculation'
+
             if info_dict.get('continue')[-1] == True and info_dict.get('length')[-1] > 1.0e5:
                 info_dict['failed'][-1] = True
                 info_dict['continue'][-1] = False
                 info_dict['continue_n'][-1] = 0
                 warn_dict['reason'][-1] = 'simulation time exceed 1.0e5 ps, failed'
+                continue
+
+            a_list.append(ppm)
+            vis_list.append(vis_and_stderr[0])
+            stderr_list.append(vis_and_stderr[1])
         # if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
 
