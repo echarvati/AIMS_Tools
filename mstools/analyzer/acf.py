@@ -22,19 +22,19 @@ def get_acf(x_list, y_list, mean_shift=False):
         acf /= (n-i)
         _x_list.append(Dx)
         _acf_list.append(acf)
-    return _x_list, _acf_list
+    return np.array(_x_list), np.array(_acf_list)
 
 def get_integral(x_list, y_list):
-    return 0
+    dx = x_list[1] - x_list[0]
+    acf_integral = y_list[0] * dx * 0.5
+    acf_integral_list = [acf_integral]
+    for i in range(1, len(x_list)):
+        acf_integral += y_list[i] * dx
+        acf_integral_list.append(acf_integral)
+    return (np.array(x_list) + 0.5 * dx), np.array(acf_integral_list)
 
 def get_integral_acf(x_list, y_list):
     _x_list, _acf_list = get_acf(x_list, y_list)
-    dx = _x_list[1] - _x_list[0]
-    acf_integral = _acf_list[0] * dx * 0.5
-    acf_integral_list = [acf_integral]
-    for i in range(1, len(_x_list)):
-        acf_integral += _acf_list[i] * dx
-        acf_integral_list.append(acf_integral)
-    return (np.array(_x_list) + 0.5 * dx), np.array(acf_integral_list)
+    return get_integral(_x_list, _acf_list)
 
 
