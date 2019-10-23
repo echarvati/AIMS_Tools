@@ -327,6 +327,7 @@ class Npt(GmxSimulation):
             't_list': a,
             'vis_list': b * 6.022 *10**(-3) * V_real / (8.314 * t_real),
         }
+        return info_dict
 
     def clean(self):
         for f in os.listdir(os.getcwd()):
