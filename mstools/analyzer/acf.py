@@ -1,7 +1,7 @@
 import numpy as np
 from mstools.panedr import edr_to_df
 
-def get_acf(x_list, y_list):
+def get_acf(x_list, y_list, mean_shift=False):
     '''
     x_list must be evenly spaced
     '''
@@ -9,7 +9,8 @@ def get_acf(x_list, y_list):
     if len(y_list) != n:
         return 'x_list, y_list have different length'
     y_list = np.array(y_list)
-    y_list -= y_list.mean()
+    if mean_shift:
+        y_list -= y_list.mean()
     dx = x_list[1] - x_list[0]
     _x_list = []
     _acf_list = []
@@ -22,6 +23,9 @@ def get_acf(x_list, y_list):
         _x_list.append(Dx)
         _acf_list.append(acf)
     return _x_list, _acf_list
+
+def get_integral(x_list, y_list):
+    return 0
 
 def get_integral_acf(x_list, y_list):
     _x_list, _acf_list = get_acf(x_list, y_list)
