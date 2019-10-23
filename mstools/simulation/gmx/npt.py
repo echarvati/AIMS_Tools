@@ -324,8 +324,8 @@ class Npt(GmxSimulation):
             'failed': [False],
             'continue': [False],
             'continue_n': 0,
-            't_list': a,
-            'vis_list': b * 6.022 *10**(-3) * V_real / (8.314 * t_real),
+            't_list': a.tolist(),
+            'vis_list': (b * 6.022 *10**(-3) * V_real / (8.314 * t_real)).tolist(),
         }
         return info_dict
 
