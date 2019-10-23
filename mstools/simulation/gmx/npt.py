@@ -4,7 +4,7 @@ import shutil
 from .gmx import GmxSimulation
 from ...analyzer import is_converged, block_average
 from ...wrapper.ppf import delta_ppf
-
+from ...panedr import edr_to_df
 
 class Npt(GmxSimulation):
     def __init__(self, **kwargs):
@@ -149,7 +149,6 @@ class Npt(GmxSimulation):
 
     def analyze(self, check_converge=True, charge_list=None, n_mol_list=None, cutoff_time=7777, **kwargs):
         import numpy as np
-        from ...panedr import edr_to_df
 
         info_dict = {
             'failed': [],
@@ -307,6 +306,27 @@ class Npt(GmxSimulation):
         }
         info_dict.update(ad_dict)
         return info_dict
+
+    def analyze_acf(self):
+        from ...analyzer.acf import *
+        df = edr_to_df('npt.edr')
+        time = df['Time'].tolist()
+        pxy = df['Pres-XY'].tolist()
+        pxz = df['Pres-XZ'].tolist()
+        pyz = df['Pres-YZ'].tolist()
+        t_real = df.Temperature.mean()
+        V_real = df.Volume.mean()
+        a1, b1 = get_acf(time, pxy)
+        a2, b2 = get_acf(time, pxz)
+        a3, b3 = get_acf(time, pyz)
+        a, b = get_integral(a1, (b1 + b2 + b3) / 3)
+        info_dict = {
+            'failed': [False],
+            'continue': [False],
+            'continue_n': 0,
+            't_list': a,
+            'vis_list': b * 6.022 *10**(-3) * V_real / (8.314 * t_real),
+        }
 
     def clean(self):
         for f in os.listdir(os.getcwd()):

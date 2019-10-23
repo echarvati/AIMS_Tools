@@ -1,5 +1,4 @@
 import numpy as np
-from mstools.panedr import edr_to_df
 
 def get_acf(x_list, y_list, mean_shift=False):
     '''
