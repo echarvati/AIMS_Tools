@@ -308,7 +308,7 @@ class Npt(GmxSimulation):
         return info_dict
 
     def analyze_acf(self):
-        from ...analyzer.acf import *
+        from ...analyzer.acf import get_acf, get_integral
         df = edr_to_df('npt.edr')
         time = df['Time'].tolist()
         pxy = df['Pres-XY'].tolist()
