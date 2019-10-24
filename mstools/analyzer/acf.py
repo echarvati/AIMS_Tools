@@ -15,7 +15,7 @@ def get_acf(x_list, y_list, mean_shift=False):
     _acf_list = []
     for i in range(int(n/2)):
         Dx = i * dx
-        acf = 0
+        acf = 0.
         for j in range(n-i):
             acf += y_list[j] * y_list[j+i]
         acf /= (n-i)
@@ -36,4 +36,15 @@ def get_integral_acf(x_list, y_list):
     _x_list, _acf_list = get_acf(x_list, y_list)
     return get_integral(_x_list, _acf_list)
 
-
+'''
+from mstools.analyzer.plot import *
+task = Task.query.filter(Task.id==1).first()
+a = json.loads(task.post_result)
+i = 0
+t = a['t_p_tlist_vislist_stderrlist'][i][0]
+p = a['t_p_tlist_vislist_stderrlist'][i][1]
+x = a['t_p_tlist_vislist_stderrlist'][i][2]
+y = a['t_p_tlist_vislist_stderrlist'][i][3]
+z = a['t_p_tlist_vislist_stderrlist'][i][4]
+plot(x,y)
+'''

@@ -34,7 +34,7 @@ class Npt(GmxSimulation):
 
     def prepare(self, model_dir='.', gro='conf.gro', top='topol.top', T=298, P=1, jobname=None, TANNEAL=800,
                 dt=0.002, nst_eq=int(4E5), nst_run=int(5E5), nst_edr=100, nst_trr=int(5E4), nst_xtc=int(1E3),
-                random_seed=-1, drde=False, **kwargs) -> [str]:
+                random_seed=-1, drde=False, tcoupl='langevin', **kwargs) -> [str]:
         if os.path.abspath(model_dir) != os.getcwd():
             shutil.copy(os.path.join(model_dir, gro), gro)
             shutil.copy(os.path.join(model_dir, top), top)
@@ -84,7 +84,7 @@ class Npt(GmxSimulation):
         # NPT production with Langevin thermostat and Parrinello-Rahman barostat
         self.gmx.prepare_mdp_from_template('t_npt.mdp', mdp_out='grompp-npt.mdp', T=T, P=P,
                                            dt=dt, nsteps=nst_run, nstenergy=nst_edr, nstxout=nst_trr, nstvout=nst_trr,
-                                           nstxtcout=nst_xtc, restart=True)
+                                           nstxtcout=nst_xtc, restart=True, tcoupl=tcoupl)
         cmd = self.gmx.grompp(mdp='grompp-npt.mdp', gro='eq.gro', top=top, tpr_out='npt.tpr',
                               cpt='eq.cpt', get_cmd=True)
         commands.append(cmd)
