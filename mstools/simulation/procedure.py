@@ -1,6 +1,7 @@
 class Procedure:
     NPT = 'npt'
     NPT_MULTI = 'npt-multi'
+    NVT_MULTI = 'nvt-multi'
     NVT_CV = 'nvt-cv'
     NVT_VISCOSITY = 'nvt-viscosity'
     NVT_VACUUM = 'nvt-vacuum'
@@ -13,4 +14,5 @@ class Procedure:
         NVT_CV : NPT,
         NVT_VISCOSITY: NPT,
         NPT_PPM: NPT,
+        NVT_MULTI: NPT,
     }
