@@ -45,7 +45,7 @@ class Nvt(GmxSimulation):
         cmd = self.gmx.grompp(mdp='grompp-nvt.mdp', gro='eq.gro', top=top, tpr_out='nvt.tpr',
                               cpt='eq.cpt', get_cmd=True)
         commands.append(cmd)
-        cmd = self.gmx.mdrun(name='npt', nprocs=nprocs, get_cmd=True)
+        cmd = self.gmx.mdrun(name='nvt', nprocs=nprocs, get_cmd=True)
         commands.append(cmd)
 
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
