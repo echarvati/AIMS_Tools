@@ -29,6 +29,7 @@ pcoupl          = no
 
 gen-vel         = %genvel%
 gen-temp        = %T%
+gen-seed        = %seed%
 
 constraints      = %constraints%; h-bonds
 constraint-algorithm = lincs

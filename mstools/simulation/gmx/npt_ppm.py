@@ -24,6 +24,8 @@ class NptPPM(GmxSimulation):
         self.log = ['ppm-0.010.log', 'ppm-0.020.log']
 
     def build(self, export=True, ppf=None):
+        pass
+        '''
         print('Build coordinates using Packmol: %s molecules ...' % self.n_mol_list)
         self.packmol.build_box(self.pdb_list, self.n_mol_list, 'init.pdb', length=self.length - 2, silent=True)
 
@@ -32,6 +34,7 @@ class NptPPM(GmxSimulation):
                                          length=self.length)
         if export:
             self.export(ppf=ppf)
+        '''
 
     def prepare(self, prior_job_dir=None, gro='conf.gro', top='topol.top', T=298, P=1, jobname=None,
                 dt=0.001, nst_eq=int(1E5), nst_edr=500, replicate=None,
@@ -52,15 +55,7 @@ class NptPPM(GmxSimulation):
 
         nprocs = self.jobmanager.nprocs
         commands = []
-        '''
-        if restart:
-            for ppm, nst_run in self.amplitudes_steps.items():
-                dt = nst_run * 0.001# ppm simulation use 1fs timestep
-                name_ppm = 'ppm-%.3f' % ppm
-                self.gmx.extend_tpr(name_ppm + '.tpr', dt, silent=True)
-                cmd = self.gmx.mdrun(name=name_ppm, nprocs=nprocs, extend=True, get_cmd=True)
-                commands.append(cmd)
-        '''
+
         for ppm, nst_run in self.amplitudes_steps.items():
             name_eq = 'eq-%.3f' % ppm
             name_ppm = 'ppm-%.3f' % ppm
