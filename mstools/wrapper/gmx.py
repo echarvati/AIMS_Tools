@@ -148,10 +148,14 @@ class GMX:
         with open(mdp_out, 'w') as f_mdp:
             f_mdp.write(contents)
 
-    def energy(self, edr, properties: [str], begin=0, end=None, fluct_props=False, get_cmd=False):
+    def energy(self, edr, properties: [str], begin=0, end=None, skip=None, fluct_props=False, get_cmd=False, out=None):
         cmd = '%s -quiet -nobackup energy -f %s -b %s' % (self.GMX_BIN, edr, str(begin))
         if end is not None:
             cmd += ' -e %s' % (str(end))
+        if skip is not None:
+            cmd += ' -skip %s' % (str(skip))
+        if out is not None:
+            cmd += ' -o %s' % (str(out))
         if fluct_props:
             cmd += ' -fluct_props'
         if get_cmd:

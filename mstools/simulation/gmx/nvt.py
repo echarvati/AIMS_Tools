@@ -12,7 +12,7 @@ class Nvt(GmxSimulation):
         pass
 
     def prepare(self, prior_job_dir=None, gro='npt.gro', top='topol.top', T=298, jobname=None,
-                dt=0.001, nst_eq=int(4E5), nst_run=int(5E5), random_seed=-1, nstenergy_vis=5, nstvout=5,
+                dt=0.001, nst_eq=int(4E5), nst_run=int(5E5), random_seed=-1, nstenergy_vis=5, nst_trr=int(5E4),
                 tcoupl='v-rescale', **kwargs) -> [str]:
         if prior_job_dir is None:
             raise Exception('prior_job_dir is needed for NVT simulation')
@@ -41,7 +41,7 @@ class Nvt(GmxSimulation):
 
         # NVT production with Langevin thermostat and Parrinello-Rahman barostat
         self.gmx.prepare_mdp_from_template('t_nvt.mdp', mdp_out='grompp-nvt.mdp', T=T, nsteps=nst_run, tcoupl=tcoupl,
-                                           nstenergy=nstenergy_vis, nstvout=nstvout, restart=True)
+                                           nstenergy=nstenergy_vis, nstxout=nst_trr, nstvout=nst_trr, restart=True)
         cmd = self.gmx.grompp(mdp='grompp-nvt.mdp', gro='eq.gro', top=top, tpr_out='nvt.tpr',
                               cpt='eq.cpt', get_cmd=True)
         commands.append(cmd)
@@ -60,6 +60,7 @@ class Nvt(GmxSimulation):
                 if i % skip == 0:
                     result.append(data)
             return result
+        self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
         df = edr_to_df('nvt.edr')
         time = df['Time'].tolist()
         pxy = get_skip_data(df['Pres-XY'], skip=skip)
