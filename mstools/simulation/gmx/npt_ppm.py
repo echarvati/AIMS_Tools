@@ -385,12 +385,11 @@ class NptPPM(GmxSimulation):
             t_p_vis_list = list(map(list, zip(T_list, P_list, vis_list)))
             t_p_vis_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
             p_coeff_score_list = []
-            from ...analyzer.fitting import fit_VTF
+            from ...analyzer.fitting import VTFfit
             import numpy as np
             _t_list = [element[0] for element in t_p_vis_list]
             _vis_list = [element[2] for element in t_p_vis_list]
-            _y_fit = np.log(_vis_list)
-            _t_vis_coeff, _t_vis_score = fit_VTF(_t_list, _y_fit)
+            _t_vis_coeff, _t_vis_score = VTFfit(_t_list, _vis_list)
             # p_coeff_score_list.append([p, coeff, score])
 
             p = str(P_list[0])
@@ -408,17 +407,19 @@ class NptPPM(GmxSimulation):
 
     @staticmethod
     def get_post_data(post_result, T, P, smiles_list, **kwargs) -> dict:
-        import numpy as np
+        from ...analyzer.fitting import VTFval
         converge_criterion = 0.95  # R value of fitting
         if len(post_result.get('vis-t-VFT'))==1:
             coef, score, tmin, tmax = post_result['vis-t-VFT'][str(P)]
             if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
-                vis = np.exp(coef[0]+coef[2]/(T-coef[1]))
+                vis = VTFval(T, coef)
+            else:
+                return {}
             return {
                 'viscosity': vis
             }
         else:
-            return None
+            return {}
 
 
 

@@ -167,7 +167,7 @@ def VTF(x, v0, t0, c):
     return v0+c/(x-t0)
 
 # log(n)=log(n0)+c/(T-T0)
-
+'''
 def fit_VTF(x_list: [float], y_list: [float], guess: [float] = None, bounds=None) -> ((float), float):
     import numpy as np
 
@@ -175,7 +175,19 @@ def fit_VTF(x_list: [float], y_list: [float], guess: [float] = None, bounds=None
     bounds = bounds or ([-np.inf, 0, 0], np.inf)
 
     return curve_fit_rsq(VTF, x_list, y_list, guess, bounds)
+'''
 
+def VTFfit(x: [float], y: [float]):
+    import numpy as np
+    y = np.log(y)
+    guess = [y[-1]-1, x[0]-1, (y[0]-y[-1]+1)*(x[0]-x[0]+1)]
+    bounds = ([-np.inf, 0, 0], np.inf)
+
+    return curve_fit_rsq(VTF, x, y, guess, bounds)
+
+def VTFval(x, coeff):
+    import numpy as np
+    return np.exp(coeff[0]+coeff[2]/(x-coeff[1]))
 
 def fit_vle_tanh(x_list: [float], d_list: [float], guess: [float] = None, bounds=None) -> ((float), float):
     import numpy as np
