@@ -691,3 +691,8 @@ class GMX:
 
         for xvg in xvg_files:
             shutil.copy(os.path.join(GMX.TEMPLATE_DIR, 'table6-9.xvg'), xvg)
+
+    def get_box_from_gro(self, gro):
+        f = open(gro, 'r')
+        box = f.readlines()[-1].split()
+        return [float(box[0]), float(box[1]), float(box[2])]

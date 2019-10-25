@@ -66,7 +66,7 @@ class Nvt(GmxSimulation):
         pxz = get_skip_data(df['Pres-XZ'], skip=skip)
         pyz = get_skip_data(df['Pres-YZ'], skip=skip)
         t_real = df.Temperature.mean()
-        V_real = df.Volume.mean()
+        V_real = self.gmx.get_box_from_gro('nvt.gro')
         a1, b1 = get_acf(time, pxy)
         a2, b2 = get_acf(time, pxz)
         a3, b3 = get_acf(time, pyz)
