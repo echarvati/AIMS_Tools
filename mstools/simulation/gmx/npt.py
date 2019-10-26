@@ -290,6 +290,7 @@ class Npt(GmxSimulation):
         le_and_stderr.append(te_and_stderr[0] + pv_and_stderr[0])
         le_and_stderr.append(te_and_stderr[1] + pv_and_stderr[1])
         ad_dict = {
+            'density': [i / 1000 for i in density_and_stderr],  # g/mL
             'length'            : length,
             'converge'          : when,
             'temperature'       : temperature_and_stderr,  # K
@@ -299,7 +300,6 @@ class Npt(GmxSimulation):
             'total energy'      : te_and_stderr, # kJ/mol
             'pV'                : pv_and_stderr,  # kJ/mol
             'liquid enthalpy'   : le_and_stderr, # kJ/mol
-            'density'           : [i / 1000 for i in density_and_stderr],  # g/mL
             'einter'            : list(block_average(einter_series.loc[when:])),  # kJ/mol
             'expansion'         : [expansion, expan_stderr],
             'compress'          : [compressi, compr_stderr],
