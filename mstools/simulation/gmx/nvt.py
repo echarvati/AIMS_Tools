@@ -51,32 +51,30 @@ class Nvt(GmxSimulation):
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
-    def analyze(self, skip=1):
-        from ...analyzer.acf import get_acf, get_integral
-        from ...panedr import edr_to_df
-        def get_skip_data(datas, skip=1):
-            result = []
-            for i, data in enumerate(datas):
-                if i % skip == 0:
-                    result.append(data)
-            return result
+    def analyze(self, skip=1, current=False, mstools_dir=None):
+        import subprocess
+        from subprocess import Popen, PIPE
         self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
-        df = edr_to_df('nvt.edr')
-        time = df['Time'].tolist()
-        pxy = get_skip_data(df['Pres-XY'], skip=skip)
-        pxz = get_skip_data(df['Pres-XZ'], skip=skip)
-        pyz = get_skip_data(df['Pres-YZ'], skip=skip)
-        t_real = df.Temperature.mean()
-        V_real = self.gmx.get_box_from_gro('nvt.gro')
-        a1, b1 = get_acf(time, pxy)
-        a2, b2 = get_acf(time, pxz)
-        a3, b3 = get_acf(time, pyz)
-        a, b = get_integral(a1, (b1 + b2 + b3) / 3)
-        info_dict = {
-            'failed': [False],
-            'continue': [False],
-            'continue_n': 0,
-            't_list': a.tolist(),
-            'vis_list': (b * 6.022 *10**(-3) * V_real / (8.314 * t_real)).tolist(),
-        }
+        if current:
+            self.gmx.current(acf=True)
+
+        if mstools_dir != None:
+            commands = [os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + 'pressure.xvg']
+            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + 'acf.xvg')
+            for cmd in commands:
+                sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
+                sp.communicate()
+            info_dict = {
+                'failed': [False],
+                'continue': [False],
+                'continue_n': 0,
+            }
+        else:
+            info_dict = {
+                'failed': [True],
+                'continue': [False],
+                'continue_n': 0,
+                'reason': 'nvt.analyze() error'
+            }
+
         return info_dict

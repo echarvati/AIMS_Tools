@@ -700,3 +700,18 @@ class GMX:
         f = open(gro, 'r')
         box = f.readlines()[-1].split()
         return [float(box[0]), float(box[1]), float(box[2])]
+
+    def current(self, trr, tpr, begin=0, end=None, skip=None, get_cmd=False, out=None, acf=False, select='System'):
+        cmd = '%s -quiet -nobackup current -f %s -s %s -b %s' % (self.GMX_BIN, trr, tpr, str(begin))
+        if end is not None:
+            cmd += ' -e %s' % (str(end))
+        if skip is not None:
+            cmd += ' -skip %s' % (str(skip))
+        if out is not None:
+            cmd += ' -o %s' % (str(out))
+        if acf:
+            cmd += ' -acf'
+
+        sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        out, err = sp.communicate(input=select.encode())
+        return out
