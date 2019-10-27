@@ -195,7 +195,7 @@ class NptPPM(GmxSimulation):
                 'continue': False,
                 'continue_n': 0
             }
-        converge_criterion = 0.3
+        converge_criterion = 0.6
         if X1 > 1 + converge_criterion:
             rst1 = 0
         elif X1 < 1:
