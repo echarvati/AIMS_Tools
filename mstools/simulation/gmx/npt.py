@@ -31,6 +31,8 @@ class Npt(GmxSimulation):
             self.fast_export_single(ppf=ppf, gro_out='_single.gro', top_out='topol.top')
             self.gmx.pdb2gro(self.pdb, 'conf.gro', [i / 10 for i in self.box], silent=True)  # A to nm
             self.gmx.modify_top_mol_numbers('topol.top', self.n_mol_list)
+            if ppf is not None:
+                shutil.copy(os.path.join(ppf), 'ff.ppf')
 
     def prepare(self, model_dir='.', gro='conf.gro', top='topol.top', T=298, P=1, jobname=None, TANNEAL=800,
                 dt=0.002, nst_eq=int(4E5), nst_run=int(5E5), nst_edr=100, nst_trr=int(5E4), nst_xtc=int(1E3),
