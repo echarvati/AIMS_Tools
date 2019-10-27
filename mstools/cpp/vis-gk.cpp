@@ -1,5 +1,5 @@
-#include "../../code_headfile/xy.h"
-//#include "/home/xiangyan/md1400/Github/cppheadfile/xy.h"
+//#include "../../code_headfile/xy.h"
+#include "/home/xiangyan/md1400/Github/cppheadfile/xy.h"
 using namespace std;
 
 int main(int argc, char** argv)
@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 	vector <double> t_list;
 	vector <double> acf_list;
 	for (unsigned i = 0; i < (t.size() / 2); ++i) {
-		printf("\r%i / %i", i, (t.size() / 2));
+		//printf("\r%i / %i", i, (t.size() / 2));
 		double Dt = i * dt;
 		double acf = 0.;
 		for (unsigned j = 0; j < t.size() - i; ++j) {
