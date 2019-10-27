@@ -70,7 +70,7 @@ class Nvt(GmxSimulation):
 
         from subprocess import Popen, PIPE
         self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
-        volume = self.gmx.get_volume_from_gro()
+        volume = self.gmx.get_volume_from_gro('nvt.gro')
         commands = [
             os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %s' % (volume) + ' %s' % (
                 temperature)]
