@@ -196,6 +196,7 @@ class Trajectory():
             for j in range(atom_number):
                 k = i * (atom_number+3) + 2 +j
                 temp = list(lines[k])
+                temp.insert(20, ' ')
                 temp.insert(15, ' ')
                 temp.insert(5, ' ')
                 temp = "".join(temp).split()
