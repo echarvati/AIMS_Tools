@@ -701,6 +701,10 @@ class GMX:
         box = f.readlines()[-1].split()
         return [float(box[0]), float(box[1]), float(box[2])]
 
+    def get_volume_from_gro(self, gro):
+        box = self.get_box_from_gro(gro)
+        return box[0] * box[1] * box[2]
+
     def current(self, trr, tpr, begin=0, end=None, skip=None, get_cmd=False, out=None, acf=False, select='System'):
         cmd = '%s -quiet -nobackup current -f %s -s %s -b %s' % (self.GMX_BIN, trr, tpr, str(begin))
         if end is not None:

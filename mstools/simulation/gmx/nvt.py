@@ -51,30 +51,40 @@ class Nvt(GmxSimulation):
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
-    def analyze(self, skip=1, current=False, mstools_dir=None):
+    def analyze(self, skip=1, current=False, mstools_dir=None, temperature=None):
         import subprocess
-        from subprocess import Popen, PIPE
-        self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
-        if current:
-            self.gmx.current(acf=True)
-
-        if mstools_dir != None:
-            commands = [os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + 'pressure.xvg']
-            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + 'acf.xvg')
-            for cmd in commands:
-                sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
-                sp.communicate()
-            info_dict = {
-                'failed': [False],
-                'continue': [False],
-                'continue_n': 0,
-            }
-        else:
-            info_dict = {
+        if mstools_dir is None:
+            return {
                 'failed': [True],
                 'continue': [False],
                 'continue_n': 0,
-                'reason': 'nvt.analyze() error'
+                'reason': 'nvt.analyze(mstools_dir=None) mstools_dir cannot be None'
             }
+        if temperature is None:
+            return {
+                'failed': [True],
+                'continue': [False],
+                'continue_n': 0,
+                'reason': 'nvt.analyze(T=None) T cannot be None'
+            }
+
+        from subprocess import Popen, PIPE
+        self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
+        volume = self.gmx.get_volume_from_gro()
+        commands = [
+            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %s' % (volume) + ' %s' % (
+                temperature)]
+        if current:
+            self.gmx.current(acf=True)
+            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + 'acf.xvg')
+
+        for cmd in commands:
+            sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
+            sp.communicate()
+        info_dict = {
+            'failed': [False],
+            'continue': [False],
+            'continue_n': 0,
+        }
 
         return info_dict
