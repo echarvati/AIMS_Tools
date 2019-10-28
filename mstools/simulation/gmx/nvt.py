@@ -51,7 +51,7 @@ class Nvt(GmxSimulation):
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
-    def analyze(self, skip=1, current=False, mstools_dir=None, temperature=None):
+    def analyze(self, skip=1, current=False, mstools_dir=None, temperature=None, weight=0.00):
         if mstools_dir is None:
             return {
                 'failed': [True],
@@ -71,8 +71,8 @@ class Nvt(GmxSimulation):
         self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
         volume = self.gmx.get_volume_from_gro('nvt.gro')
         commands = [
-            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %s' % (volume) + ' %s' % (
-                temperature)]
+            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
+                temperature) + ' %.2f' % (weight)]
         if current:
             self.gmx.current(acf=True)
             commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + 'acf.xvg')

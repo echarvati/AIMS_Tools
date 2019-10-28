@@ -163,31 +163,6 @@ def fit_logistic(x_list: [float], y_list: [float], guess: [float] = None, bounds
     return curve_fit_rsq(logistic, x_list, y_list, guess, bounds)
 
 
-def VTF(x, v0, t0, c):
-    return v0+c/(x-t0)
-
-# log(n)=log(n0)+c/(T-T0)
-'''
-def fit_VTF(x_list: [float], y_list: [float], guess: [float] = None, bounds=None) -> ((float), float):
-    import numpy as np
-
-    guess = guess or [y_list[-1]-1, x_list[0]-1, (y_list[0]-y_list[-1]+1)*(x_list[0]-x_list[0]+1)]
-    bounds = bounds or ([-np.inf, 0, 0], np.inf)
-
-    return curve_fit_rsq(VTF, x_list, y_list, guess, bounds)
-'''
-
-def VTFfit(x: [float], y: [float]):
-    import numpy as np
-    y = np.log(y)
-    guess = [y[-1]-1, x[0]-1, (y[0]-y[-1]+1)*(x[0]-x[0]+1)]
-    bounds = ([-np.inf, 0, 0], np.inf)
-
-    return curve_fit_rsq(VTF, x, y, guess, bounds)
-
-def VTFval(x, coeff):
-    import numpy as np
-    return np.exp(coeff[0]+coeff[2]/(x-coeff[1]))
 
 def fit_vle_tanh(x_list: [float], d_list: [float], guess: [float] = None, bounds=None) -> ((float), float):
     import numpy as np
@@ -274,3 +249,52 @@ def fit_vle_pvap(T_list, pvap_list, guess=None, bounds=None):
     bounds = bounds or (0, np.inf)
 
     return curve_fit_rsq(vle_log10pvap, T_list, y_array, guess, bounds)
+
+
+
+def VTF(x, v0, t0, c):
+    return v0+c/(x-t0)
+
+# log(n)=log(n0)+c/(T-T0)
+'''
+def fit_VTF(x_list: [float], y_list: [float], guess: [float] = None, bounds=None) -> ((float), float):
+    import numpy as np
+
+    guess = guess or [y_list[-1]-1, x_list[0]-1, (y_list[0]-y_list[-1]+1)*(x_list[0]-x_list[0]+1)]
+    bounds = bounds or ([-np.inf, 0, 0], np.inf)
+
+    return curve_fit_rsq(VTF, x_list, y_list, guess, bounds)
+'''
+
+def VTFfit(x: [float], y: [float]):
+    import numpy as np
+    y = np.log(y)
+    guess = [y[-1]-1, x[0]-1, (y[0]-y[-1]+1)*(x[0]-x[0]+1)]
+    # bounds = ([-np.inf, 0, 0], np.inf)
+    bounds = ((0, np.inf))
+
+    return curve_fit_rsq(VTF, x, y, guess, bounds)
+
+def VTFval(x, coeff):
+    import numpy as np
+    return np.exp(coeff[0]+coeff[2]/(x-coeff[1]))
+
+
+def VisGK(x, A, alpha, tau1, tau2):
+    import numpy as np
+    return A * ( alpha*tau1*(1-np.exp(-x/tau1)) + (1-alpha)*tau2*(1-np.exp(-x/tau2)) )
+
+def VisGKfit(x: [float], y: [float]):
+    import numpy as np
+    guess = [1., 0.5, 1., 1.]
+    bounds = ((0, np.inf))
+    print(bounds)
+    return curve_fit_rsq(VisGK, x, y, guess, bounds)
+
+def VisGKval(x, coeff):
+    import numpy as np
+    A = coeff[0]
+    alpha = coeff[1]
+    tau1 = coeff[2]
+    tau2 = coeff[3]
+    return A * (alpha * tau1 * (1 - np.exp(-x / tau1)) + (1 - alpha) * tau2 * (1 - np.exp(-x / tau2)))

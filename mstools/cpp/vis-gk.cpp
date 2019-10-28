@@ -5,6 +5,11 @@ using namespace std;
 int main(int argc, char** argv)
 {
 	FILE* f_pre= fopen(argv[1], "r");
+	double V = atof(argv[2]);
+	double T = atof(argv[3]);
+	double weight = atof(argv[4]);
+	char weight_char[10];
+	sprintf(weight_char, "%.2f", weight);
 	vector <double> t;
 	vector <double> pxy;
 	vector <double> pxz;
@@ -45,20 +50,27 @@ int main(int argc, char** argv)
 		t_list.push_back(Dt);
 		acf_list.push_back(acf);
 	}
-	FILE* fout = fopen("acf.txt", "w");
+
+	string fn = "acf-" + string(weight_char) + ".txt"
+	FILE* fout = fopen(fn, "w");
 	fprintf(fout, "#time(ps)\tACF(Pab)\n");
 	for (unsigned i = 0; i < t_list.size(); ++i) {
 		fprintf(fout, "%f\t%f\n", t_list[i], acf_list[i]);
 	}
-	fout = fopen("vis.txt", "w");
+	string fn = "vis-" + string(weight_char) + ".txt"
+	fout = fopen(fn, "w");
 	fprintf(fout, "#time(ps)\tviscosity(mPa·s)\n");
-	double V = atof(argv[2]);
-	double T = atof(argv[3]);
+
 	double convert = 6.022 * 0.001 * V / (8.314 * T);
 	double vis = convert * acf_list[0] * dt / 2;
 	for (unsigned i = 1; i < t_list.size(); ++i) {
 		fprintf(fout, "%f\t%f\n", t_list[i] - 0.5 * dt, vis);
-		vis += convert * acf_list[i] * dt;
+		if(t_list[i] <= 1){
+		    vis += convert * acf_list[i] * dt;
+		}
+		else{
+		    vis += convert * acf_list[i] * dt * pow(t_list[i], -weight);
+		}
 	}
 	fclose(fout);
 }
