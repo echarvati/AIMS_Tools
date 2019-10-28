@@ -46,12 +46,12 @@ int main(int argc, char** argv)
 		acf_list.push_back(acf);
 	}
 	FILE* fout = fopen("acf.txt", "w");
-	fprintf(fout, "time(ps)\tACF(Pab)\n");
+	fprintf(fout, "#time(ps)\tACF(Pab)\n");
 	for (unsigned i = 0; i < t_list.size(); ++i) {
 		fprintf(fout, "%f\t%f\n", t_list[i], acf_list[i]);
 	}
 	fout = fopen("vis.txt", "w");
-	fprintf(fout, "time(ps)\tviscosity(mPa·s)\n");
+	fprintf(fout, "#time(ps)\tviscosity(mPa·s)\n");
 	double V = atof(argv[2]);
 	double T = atof(argv[3]);
 	double convert = 6.022 * 0.001 * V / (8.314 * T);
