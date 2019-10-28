@@ -288,7 +288,6 @@ def VisGKfit(x: [float], y: [float]):
     import numpy as np
     guess = [1., 0.5, 1., 1.]
     bounds = ((0, np.inf))
-    print(bounds)
     return curve_fit_rsq(VisGK, x, y, guess, bounds)
 
 def VisGKval(x, coeff):
