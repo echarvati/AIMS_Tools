@@ -52,7 +52,6 @@ class Nvt(GmxSimulation):
         return commands
 
     def analyze(self, skip=1, current=False, mstools_dir=None, temperature=None):
-        import subprocess
         if mstools_dir is None:
             return {
                 'failed': [True],

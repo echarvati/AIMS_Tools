@@ -309,7 +309,8 @@ class Npt(GmxSimulation):
         info_dict.update(ad_dict)
         return info_dict
 
-    def analyze_acf(self):
+    def analyze_acf(self, skip=1, current=False, mstools_dir=None, temperature=None):
+        '''
         from ...analyzer.acf import get_acf, get_integral
         df = edr_to_df('npt.edr')
         time = df['Time'].tolist()
@@ -329,6 +330,39 @@ class Npt(GmxSimulation):
             't_list': a.tolist(),
             'vis_list': (b * 6.022 *10**(-3) * V_real / (8.314 * t_real)).tolist(),
         }
+        return info_dict
+        '''
+        if mstools_dir is None:
+            return {
+                'failed': [True],
+                'continue': [False],
+                'continue_n': 0,
+                'reason': 'nvt.analyze(mstools_dir=None) mstools_dir cannot be None'
+            }
+
+        df = edr_to_df('npt.edr')
+        temperature = df.Temperature.mean()
+        volume = df.Volume.mean()
+
+        from subprocess import Popen, PIPE
+        self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
+        # volume = self.gmx.get_volume_from_gro('nvt.gro')
+        commands = [
+            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %s' % (volume) + ' %s' % (
+                temperature)]
+        if current:
+            self.gmx.current(acf=True)
+            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + 'acf.xvg')
+
+        for cmd in commands:
+            sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
+            sp.communicate()
+        info_dict = {
+            'failed': [False],
+            'continue': [False],
+            'continue_n': 0,
+        }
+
         return info_dict
 
     def clean(self):
