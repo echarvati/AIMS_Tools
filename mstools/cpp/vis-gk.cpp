@@ -51,14 +51,14 @@ int main(int argc, char** argv)
 		acf_list.push_back(acf);
 	}
 
-	string fn = "acf-" + string(weight_char) + ".txt"
-	FILE* fout = fopen(fn, "w");
+	string fn = "acf.txt";
+	FILE* fout = fopen(fn.c_str(), "w");
 	fprintf(fout, "#time(ps)\tACF(Pab)\n");
 	for (unsigned i = 0; i < t_list.size(); ++i) {
 		fprintf(fout, "%f\t%f\n", t_list[i], acf_list[i]);
 	}
-	string fn = "vis-" + string(weight_char) + ".txt"
-	fout = fopen(fn, "w");
+	fn = "vis-" + string(weight_char) + ".txt";
+	fout = fopen(fn.c_str(), "w");
 	fprintf(fout, "#time(ps)\tviscosity(mPa·s)\n");
 
 	double convert = 6.022 * 0.001 * V / (8.314 * T);
