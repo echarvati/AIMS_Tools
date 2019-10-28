@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 	double dt = t[1] - t[0];
 	vector <double> t_list;
 	vector <double> acf_list;
-	for (unsigned i = 0; i < (t.size() / 2); ++i) {
+	for (unsigned i = 0; i < (t.size() / 4); ++i) {
 		//printf("\r%i / %i", i, (t.size() / 2));
 		double Dt = i * dt;
 		double acf = 0.;
