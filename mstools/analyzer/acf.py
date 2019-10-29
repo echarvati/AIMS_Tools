@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 def get_acf(x_list, y_list, mean_shift=False):
     '''
@@ -35,6 +36,15 @@ def get_integral(x_list, y_list):
 def get_integral_acf(x_list, y_list):
     _x_list, _acf_list = get_acf(x_list, y_list)
     return get_integral(_x_list, _acf_list)
+
+def get_block_average(list, n_block=None):
+    if n_block is None:
+        return list
+    list = np.array(list)
+    list_out = []
+    for i in range(math.floor(list.size / n_block)):
+        list_out.append(list[i * n_block:(i + 1) * n_block].mean())
+    return np.array(list_out)
 
 '''
 from mstools.analyzer.plot import *
