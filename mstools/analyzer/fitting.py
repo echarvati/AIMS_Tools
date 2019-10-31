@@ -288,7 +288,7 @@ def DoubleEXPfit(x: [float], y: [float]):
     import numpy as np
     guess = [1., 0.5, 1., 1.]
     bounds = ((0, np.inf))
-    return curve_fit_rsq(VisGK, x, y, guess, bounds)
+    return curve_fit_rsq(DoubleEXP, x, y, guess, bounds)
 
 def DoubleEXPval(x, coeff):
     import numpy as np
@@ -303,4 +303,4 @@ def DoubleEXPLimit(coeff):
     alpha = coeff[1]
     tau1 = coeff[2]
     tau2 = coeff[3]
-    return A * ( alpha*tau1 + (1-alpha)*tau2 )
+    return A * (alpha*tau1 + (1-alpha)*tau2)
