@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 		acf_list.push_back(acf);
 	}
 
-	string fn = "acf.txt";
+	string fn = "P_acf.txt";
 	FILE* fout = fopen(fn.c_str(), "w");
 	fprintf(fout, "#time(ps)\tACF(Pab)\n");
 	for (unsigned i = 0; i < t_list.size(); ++i) {
