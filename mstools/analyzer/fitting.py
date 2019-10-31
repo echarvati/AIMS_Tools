@@ -297,3 +297,10 @@ def VisGKval(x, coeff):
     tau1 = coeff[2]
     tau2 = coeff[3]
     return A * (alpha * tau1 * (1 - np.exp(-x / tau1)) + (1 - alpha) * tau2 * (1 - np.exp(-x / tau2)))
+
+def VisGKLimit(coeff):
+    A = coeff[0]
+    alpha = coeff[1]
+    tau1 = coeff[2]
+    tau2 = coeff[3]
+    return A * ( alpha*tau1 + (1-alpha)*tau2 )
