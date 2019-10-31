@@ -714,8 +714,7 @@ class GMX:
         if out is not None:
             cmd += ' -o %s' % (str(out))
         if acf:
-            cmd += ' -acf'
-        select = 'System'
+            cmd += ' -caf'
         sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
         out, err = sp.communicate(input=select.encode())
         out_str = ''
