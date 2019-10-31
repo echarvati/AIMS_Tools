@@ -80,6 +80,7 @@ class Nvt(GmxSimulation):
                 temperature) + ' %.2f' % (weight))
             open('current.out', 'w').write(out)
             open('current.err', 'w').write(err)
+            '''
             acf_info = self.gmx.read_gmx_xvg('caf.xvg')
             t_list = np.array(acf_info['time'])
             acf_list = np.array(acf_info['acf'])
@@ -91,7 +92,7 @@ class Nvt(GmxSimulation):
             for i in range(1, len(t_list)):
                 f.write('%f\t%f\n' % (t_list[i] - 0.5 * dt, econ))
                 econ += convert * acf_list[i] * dt
-
+            '''
         for cmd in commands:
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
             sp.communicate()

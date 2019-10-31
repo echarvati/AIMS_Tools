@@ -280,17 +280,17 @@ def VTFval(x, coeff):
     return np.exp(coeff[0]+coeff[2]/(x-coeff[1]))
 
 
-def VisGK(x, A, alpha, tau1, tau2):
+def DoubleEXP(x, A, alpha, tau1, tau2):
     import numpy as np
     return A * ( alpha*tau1*(1-np.exp(-x/tau1)) + (1-alpha)*tau2*(1-np.exp(-x/tau2)) )
 
-def VisGKfit(x: [float], y: [float]):
+def DoubleEXPfit(x: [float], y: [float]):
     import numpy as np
     guess = [1., 0.5, 1., 1.]
     bounds = ((0, np.inf))
     return curve_fit_rsq(VisGK, x, y, guess, bounds)
 
-def VisGKval(x, coeff):
+def DoubleEXPval(x, coeff):
     import numpy as np
     A = coeff[0]
     alpha = coeff[1]
@@ -298,7 +298,7 @@ def VisGKval(x, coeff):
     tau2 = coeff[3]
     return A * (alpha * tau1 * (1 - np.exp(-x / tau1)) + (1 - alpha) * tau2 * (1 - np.exp(-x / tau2)))
 
-def VisGKLimit(coeff):
+def DoubleEXPLimit(coeff):
     A = coeff[0]
     alpha = coeff[1]
     tau1 = coeff[2]
