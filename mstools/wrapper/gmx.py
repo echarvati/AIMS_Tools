@@ -734,7 +734,7 @@ class GMX:
         if file is None:
             return None
         if file.endswith('caf.xvg'):
-            info = pd.read_table(file, sep='\s+', header=17)
+            info = pd.read_csv(file, sep='\s+', header=17)
             info.columns = ['time', 'acf', 'average', '#', '#']
             info = info.drop(['#'], axis=1)
             return info
