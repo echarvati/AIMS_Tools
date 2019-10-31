@@ -75,24 +75,13 @@ class Nvt(GmxSimulation):
             os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
                 temperature) + ' %.2f' % (weight)]
         if current:
-            out ,err = self.gmx.current('nvt.trr', 'nvt.tpr', acf=True)
+            out, err = self.gmx.current('nvt.trr', 'nvt.tpr', acf=True)
             commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + ' current.xvg' + ' %f' % (volume) + ' %f' % (
                 temperature) + ' %.2f' % (weight))
             open('current.out', 'w').write(out)
             open('current.err', 'w').write(err)
-            '''
-            acf_info = self.gmx.read_gmx_xvg('caf.xvg')
-            t_list = np.array(acf_info['time'])
-            acf_list = np.array(acf_info['acf'])
-            dt = t_list[1] - t_list[0]
-            convert = 1.6 ** 2 * 6.022 * 10 ** 6 / (3 * 8.314 * temperature * volume)
-            econ = convert * acf_list[0] * dt / 2
-            f = open('econ-gmx.txt', 'w')
-            f.write('#time(ps)\telectrical_conductivity(S/m)\n')
-            for i in range(1, len(t_list)):
-                f.write('%f\t%f\n' % (t_list[i] - 0.5 * dt, econ))
-                econ += convert * acf_list[i] * dt
-            '''
+            os.remove('nvt.trr')
+
         for cmd in commands:
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
             sp.communicate()
