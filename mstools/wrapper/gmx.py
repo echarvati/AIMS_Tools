@@ -715,7 +715,27 @@ class GMX:
             cmd += ' -o %s' % (str(out))
         if acf:
             cmd += ' -acf'
-
+        select = 'System'
         sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
         out, err = sp.communicate(input=select.encode())
-        return out
+        out_str = ''
+        for line in str(out).split('\\n'):
+            if line not in ['', '"', '\'']:
+                out_str += '%s\n' % (line)
+        err_str = ''
+        for line in str(err).split('\\n'):
+            if line not in ['', '"', '\'']:
+                err_str += '%s\n' % (line)
+
+        return out_str, err_str
+
+    def read_gmx_xvg(self, file=None):
+        import pandas as pd
+        if file is None:
+            return None
+        if file.endswith('caf.xvg'):
+            info = pd.read_table(file, sep='\s+', header=17)
+            info.columns = ['time', 'acf', 'average', '#', '#']
+            info = info.drop(['#'], axis=1)
+            return info
+        return None
