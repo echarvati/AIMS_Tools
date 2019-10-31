@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 		else if (p[0] != '#' and p[0] != '@') {
 			t.push_back(atof(sp[0].c_str()));
 			Vector j(atof(sp[1].c_str()), atof(sp[2].c_str()), atof(sp[3].c_str()));
-			J.push_back(j)
+			J.push_back(j);
 		}
 	}
 	fclose(f_current);
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 	fout = fopen(fn.c_str(), "w");
 	fprintf(fout, "#time(ps)\telectrical_conductivity(S/m)\n");
 
-	double convert = 1.6 ** 2 * 6.022 * 10 ** 6 / (3 * 8.314 * T * V);
+	double convert = 1.6 * 1.6 * 2 * 6.022 * 1000000 / (3 * 8.314 * T * V);
 	double econ = convert * acf_list[0] * dt / 2;
 	for (unsigned i = 1; i < t_list.size(); ++i) {
 		fprintf(fout, "%f\t%f\n", t_list[i] - 0.5 * dt, econ);
