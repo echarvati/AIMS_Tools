@@ -79,7 +79,6 @@ class Nvt(GmxSimulation):
             out ,err = self.gmx.current('nvt.trr', 'nvt.tpr', acf=True)
             open('current.out', 'w').write(out)
             open('current.err', 'w').write(err)
-            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + 'acf.xvg')
             acf_info = self.gmx.read_gmx_xvg('caf.xvg')
             t_list = np.array(acf_info['time'])
             acf_list = np.array(acf_info['acf'])
