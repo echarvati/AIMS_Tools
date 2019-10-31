@@ -280,27 +280,19 @@ def VTFval(x, coeff):
     return np.exp(coeff[0]+coeff[2]/(x-coeff[1]))
 
 
-def DoubleEXP(x, A, alpha, tau1, tau2):
+def ExpConst(x, A, C, tau):
     import numpy as np
-    return A * ( alpha*tau1*(1-np.exp(-x/tau1)) + (1-alpha)*tau2*(1-np.exp(-x/tau2)) )
+    return A * np.exp(-x/tau) + C
 
-def DoubleEXPfit(x: [float], y: [float]):
+def ExpConstfit(x: [float], y: [float]):
     import numpy as np
-    guess = [1., 0.5, 1., 1.]
-    bounds = ((0, np.inf))
-    return curve_fit_rsq(DoubleEXP, x, y, guess, bounds)
+    guess = [1., 1., 1.]
+    bounds = ((-np.inf, np.inf))
+    return curve_fit_rsq(ExpConst, x, y, guess, bounds)
 
-def DoubleEXPval(x, coeff):
+def ExpConstval(x, coeff):
     import numpy as np
     A = coeff[0]
-    alpha = coeff[1]
-    tau1 = coeff[2]
-    tau2 = coeff[3]
-    return A * (alpha * tau1 * (1 - np.exp(-x / tau1)) + (1 - alpha) * tau2 * (1 - np.exp(-x / tau2)))
-
-def DoubleEXPLimit(coeff):
-    A = coeff[0]
-    alpha = coeff[1]
-    tau1 = coeff[2]
-    tau2 = coeff[3]
-    return A * (alpha*tau1 + (1-alpha)*tau2)
+    C = coeff[1]
+    tau = coeff[2]
+    return A * np.exp(-x / tau) + C
