@@ -278,7 +278,7 @@ class Npt(GmxSimulation):
             info_dict['continue'].append(False)
         if info_dict['reason'] == []:
             info_dict['reason'].append('converge')
-        if charge_list != None and n_mol_list != None and set(charge_list)!={0}:
+        if charge_list != None and n_mol_list != None and set(charge_list) != {0}:
             econ = 0.
             econ_stderr = 0.
             for i, charge in enumerate(charge_list):
