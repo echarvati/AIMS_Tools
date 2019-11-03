@@ -309,29 +309,7 @@ class Npt(GmxSimulation):
         info_dict.update(ad_dict)
         return info_dict
 
-    def analyze_acf(self, skip=1, current=False, mstools_dir=None, temperature=None):
-        '''
-        from ...analyzer.acf import get_acf, get_integral
-        df = edr_to_df('npt.edr')
-        time = df['Time'].tolist()
-        pxy = df['Pres-XY'].tolist()
-        pxz = df['Pres-XZ'].tolist()
-        pyz = df['Pres-YZ'].tolist()
-        t_real = df.Temperature.mean()
-        V_real = df.Volume.mean()
-        a1, b1 = get_acf(time, pxy)
-        a2, b2 = get_acf(time, pxz)
-        a3, b3 = get_acf(time, pyz)
-        a, b = get_integral(a1, (b1 + b2 + b3) / 3)
-        info_dict = {
-            'failed': [False],
-            'continue': [False],
-            'continue_n': 0,
-            't_list': a.tolist(),
-            'vis_list': (b * 6.022 *10**(-3) * V_real / (8.314 * t_real)).tolist(),
-        }
-        return info_dict
-        '''
+    def analyze_acf(self, skip=1, current=False, mstools_dir=None, weight=0.00):
         if mstools_dir is None:
             return {
                 'failed': [True],
@@ -345,14 +323,25 @@ class Npt(GmxSimulation):
         volume = df.Volume.mean()
 
         from subprocess import Popen, PIPE
-        self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
-        # volume = self.gmx.get_volume_from_gro('nvt.gro')
+        # viscosity: pressure acf
+        self.gmx.energy('npt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
         commands = [
-            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %s' % (volume) + ' %s' % (
-                temperature)]
+            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
+                temperature) + ' %.2f' % (weight)]
+        # electrical conductivity: current acf
         if current:
-            self.gmx.current(acf=True)
-            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + 'acf.xvg')
+            out, err = self.gmx.current('npt.trr', 'npt.tpr', caf=True)
+            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + ' current.xvg' + ' %f' % (
+                volume) + ' %f' % (
+                                temperature) + ' %.2f' % (weight))
+            open('current.out', 'w').write(out)
+            open('current.err', 'w').write(err)
+
+        # diffusion constant: velocity acf
+        self.gmx.trjconv('npt.tpr', 'npt.trr', 'traj.gro', skip=10)
+        commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
+        # os.remove('traj.gro')
+        # os.remove('nvt.trr')
 
         for cmd in commands:
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
