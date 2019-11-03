@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 	double dt = t[1] - t[0];
 	vector <double> t_list;
 	vector <double> acf_list;
-	for (unsigned i = 0; i < (t.size() / 4); ++i) {
+	for (unsigned i = 0; i < (t.size() / 2); ++i) {
 		//printf("\r%i / %i", i, (t.size() / 2));
 		double Dt = i * dt;
 		double acf = 0.;
@@ -47,7 +47,9 @@ int main(int argc, char** argv)
 	for (unsigned i = 0; i < t_list.size(); ++i) {
 		fprintf(fout, "%f\t%f\n", t_list[i], acf_list[i]);
 	}
-	fn = "econ-" + string(weight_char) + ".txt";
+	if(string(weight_char)=="0.00") fn = "econ.txt";
+	else fn = "econ-" + string(weight_char) + ".txt";
+
 	fout = fopen(fn.c_str(), "w");
 	fprintf(fout, "#time(ps)\telectrical_conductivity(S/m)\n");
 
