@@ -531,7 +531,7 @@ class GMX:
         sp.communicate()
 
     def trjconv(self, tpr, input_trj, output_trj, pbc_nojump=False, skip=1, silent=False, select='System'):
-        cmd = '%s trjconv -s %s -f %s -o %s -skip %i' % (self.GMX_BIN, tpr, input_trj, output_trj, skip)
+        cmd = '%s -quiet -nobackup trjconv -s %s -f %s -o %s -skip %i' % (self.GMX_BIN, tpr, input_trj, output_trj, skip)
         if pbc_nojump:
             cmd += ' -pbc nojump'
         (stdout, stderr) = (PIPE, PIPE) if silent else (None, None)
