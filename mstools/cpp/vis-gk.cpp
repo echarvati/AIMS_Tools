@@ -1,5 +1,5 @@
 //#include "../../code_headfile/xy.h"
-#include "/home/xiangyan/md1400/Github/cppheadfile/xy.h"
+#include "/home/xiangyan/md1400/Github/cppheadfile/XYHeadFile/xy.h"
 using namespace std;
 
 int main(int argc, char** argv)
