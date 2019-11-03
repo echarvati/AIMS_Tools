@@ -309,7 +309,7 @@ class Npt(GmxSimulation):
         info_dict.update(ad_dict)
         return info_dict
 
-    def analyze_acf(self, skip=1, current=False, mstools_dir=None, weight=0.00):
+    def analyze_acf(self, current=False, mstools_dir=None, weight=0.00):
         if mstools_dir is None:
             return {
                 'failed': [True],
@@ -324,7 +324,7 @@ class Npt(GmxSimulation):
 
         from subprocess import Popen, PIPE
         # viscosity: pressure acf
-        self.gmx.energy('npt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], skip=skip, out='pressure.xvg')
+        self.gmx.energy('npt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg')
         commands = [
             os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
                 temperature) + ' %.2f' % (weight)]
