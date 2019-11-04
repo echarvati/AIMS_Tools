@@ -66,7 +66,7 @@ class Nvt(GmxSimulation):
     def analyze_diff(self, charge_list, n_mol_list):
         # get temperature and volume
         volume_and_stderr = [self.gmx.get_volume_from_gro('nvt.gro'), 0.]
-        temperature_and_stderr = self.gmx.get_properties_stderr('nvt.edr', ['Temperature'])
+        [temperature_and_stderr] = self.gmx.get_properties_stderr('nvt.edr', 'Temperature')
 
         # calculate diffusion constant using Einstein relation
         diff_e_dict = {'System': list(self.gmx.diffusion('nvt.xtc', 'nvt.tpr'))}
@@ -128,7 +128,7 @@ class Nvt(GmxSimulation):
         from ...panedr import edr_to_df
         df = edr_to_df('nvt.edr')
         temperature = df.Temperature.mean()
-        volume = df.Volume.mean()
+        volume = self.gmx.get_volume_from_gro('nvt.gro')
         commands = []
         out, err = self.gmx.current('nvt.trr', 'nvt.tpr', caf=True)
         open('current.out', 'w').write(out)
