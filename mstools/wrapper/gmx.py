@@ -593,7 +593,7 @@ class GMX:
                     cmd += ' -ntomp %i' % n_thread
 
             else:
-                cmd = 'for i in %s; \ndo cd $i;\n%s &\ndone\nwait\n' % (' '.join(dirs), cmd)  # do it in every directory
+                cmd = 'for i in %s; \ndo\n\tcd $i;\n\t%s &\ndone\nwait\n' % (' '.join(dirs), cmd)  # do it in every directory
             return cmd
 
         commands_list: [[str]] = []

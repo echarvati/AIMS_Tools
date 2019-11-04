@@ -37,7 +37,7 @@ class Npt(GmxSimulation):
 
     def prepare(self, model_dir='.', gro='conf.gro', top='topol.top', T=298, P=1, jobname=None, TANNEAL=800,
                 dt=0.002, nst_eq=int(4E5), nst_run=int(5E5), nst_edr=100, nst_trr=int(5E4), nst_xtc=int(1E3),
-                random_seed=-1, drde=False, tcoupl='langevin', **kwargs) -> [str]:
+                random_seed=-1, drde=False, tcoupl='langevin', acf=False, mstools_dir=None, **kwargs) -> [str]:
         if os.path.abspath(model_dir) != os.getcwd():
             shutil.copy(os.path.join(model_dir, gro), gro)
             shutil.copy(os.path.join(model_dir, top), top)
@@ -106,6 +106,15 @@ class Npt(GmxSimulation):
         cmd = self.gmx.mdrun(name='hvap', nprocs=nprocs, n_omp=nprocs, rerun='npt.xtc', get_cmd=True)
         commands.append(cmd)
 
+        if acf:
+            # diffusion constant
+            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', skip=10, get_cmd=True))
+            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
+            # viscosity
+            commands.append(self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg', get_cmd=True))
+            volume = self.gmx.get_volume_from_gro('npt.gro')
+            weight = 0.00
+            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (T) + ' %.2f' % (weight))
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
@@ -303,7 +312,7 @@ class Npt(GmxSimulation):
         return info_dict
 
     # analyze diffusion constant
-    def analyze_diff(self, charge_list, n_mol_list, mstools_dir):
+    def analyze_diff(self, charge_list, n_mol_list):
         # get temperature and volume
         temperature_and_stderr, volume_and_stderr = self.gmx.get_properties_stderr('npt.edr', ['Temperature', 'Volume'])
 
@@ -329,12 +338,6 @@ class Npt(GmxSimulation):
             info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Einstein diffusion constant': [econ, econ_stderr]})
 
         # calculate diffusion constant using Green-Kubo relation
-        commands = []
-        self.gmx.trjconv('npt.tpr', 'npt.trr', 'traj.gro', skip=10)
-        commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
-        for cmd in commands:
-            sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
-            sp.communicate()
         # os.remove('traj.gro')
         # os.remove('nvt.trr')
         from ...analyzer.acf import get_t_property_list, get_block_average
@@ -368,48 +371,32 @@ class Npt(GmxSimulation):
 
         return info_dict
 
-
-    def analyze_acf(self, current=False, mstools_dir=None, weight=0.00):
-        if mstools_dir is None:
-            return {
-                'failed': [True],
-                'continue': [False],
-                'continue_n': 0,
-                'reason': 'nvt.analyze(mstools_dir=None) mstools_dir cannot be None'
-            }
-
+    # analyze electrical conductivity
+    def analyze_econ(self, mstools_dir, weight=0.00):
         df = edr_to_df('npt.edr')
         temperature = df.Temperature.mean()
         volume = df.Volume.mean()
-
-        # viscosity: pressure acf
-        self.gmx.energy('npt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg')
-        commands = [
-            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
-                temperature) + ' %.2f' % (weight)]
-        # electrical conductivity: current acf
-        if current:
-            out, err = self.gmx.current('npt.trr', 'npt.tpr', caf=True)
-            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + ' current.xvg' + ' %f' % (
-                volume) + ' %f' % (
-                                temperature) + ' %.2f' % (weight))
-            open('current.out', 'w').write(out)
-            open('current.err', 'w').write(err)
-
-        # diffusion constant: velocity acf
-        self.gmx.trjconv('npt.tpr', 'npt.trr', 'traj.gro', skip=10)
-        commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
-        # os.remove('traj.gro')
-        # os.remove('nvt.trr')
-
+        commands = []
+        out, err = self.gmx.current('npt.trr', 'npt.tpr', caf=True)
+        open('current.out', 'w').write(out)
+        open('current.err', 'w').write(err)
+        commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'current-gk') + ' current.xvg' + ' %f' % (
+            volume) + ' %f' % (
+                            temperature) + ' %.2f' % (weight))
         for cmd in commands:
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
             sp.communicate()
-        info_dict = {
+
+    def analyze_acf(self, mstools_dir, charge_list, n_mol_list, current=False, weight=0.00):
+        info_dict = self.analyze_diff(charge_list, n_mol_list)
+        if current:
+            self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
+
+        info_dict.update({
             'failed': [False],
             'continue': [False],
             'continue_n': 0,
-        }
+        })
 
         return info_dict
 
