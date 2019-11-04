@@ -1,5 +1,6 @@
 import numpy as np
-import math
+import math, os
+import pandas as pd
 
 def get_acf(x_list, y_list, mean_shift=False):
     '''
@@ -46,15 +47,23 @@ def get_block_average(list, n_block=None):
         list_out.append(list[i * n_block:(i + 1) * n_block].mean())
     return np.array(list_out)
 
-'''
-from mstools.analyzer.plot import *
-task = Task.query.filter(Task.id==1).first()
-a = json.loads(task.post_result)
-i = 0
-t = a['t_p_tlist_vislist_stderrlist'][i][0]
-p = a['t_p_tlist_vislist_stderrlist'][i][1]
-x = a['t_p_tlist_vislist_stderrlist'][i][2]
-y = a['t_p_tlist_vislist_stderrlist'][i][3]
-z = a['t_p_tlist_vislist_stderrlist'][i][4]
-plot(x,y)
-'''
+def get_t_property_list(property, dir=None, name=None, weight=0.00):
+    Property_dict = {
+        'viscosity': {'abbr': 'vis', 'property_unit': 'viscosity(mPa·s)'},
+        'electrical conductivity': {'abbr': 'econ', 'property_unit': 'electrical_conductivity(S/m)'},
+        'diffusion constant': {'abbr': 'diff', 'property_unit': 'diffusion_constant(cm^2/s)'},
+    }
+    if Property_dict.get(property) is None:
+        raise Exception('invalid property: %s', property)
+    file_name = Property_dict.get(property).get('abbr')
+    if name is not None:
+        file_name += '-%s' % (name)
+    if weight != 0.00:
+        file_name += '-%.2f' % (weight)
+    file_name += '.txt'
+    if dir is not None:
+        file_name = os.path.join(dir, file_name)
+    info = pd.read_csv(file_name, sep='\s+', header=0)
+    t_list = np.array(info['#time(ps)'])
+    property_list = np.array(info[Property_dict.get(property).get('property_unit')])
+    return t_list, property_list

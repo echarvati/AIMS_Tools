@@ -1,5 +1,6 @@
 import os
 import shutil
+from subprocess import Popen, PIPE
 
 from .gmx import GmxSimulation
 from ...analyzer import is_converged, block_average
@@ -149,7 +150,8 @@ class Npt(GmxSimulation):
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure, sh=sh)
         return commands
 
-    def analyze(self, check_converge=True, charge_list=None, n_mol_list=None, cutoff_time=7777, **kwargs):
+    # analyze thermodynamic properties
+    def analyze(self, check_converge=True, cutoff_time=7777, **kwargs):
         import numpy as np
 
         info_dict = {
@@ -278,16 +280,7 @@ class Npt(GmxSimulation):
             info_dict['continue'].append(False)
         if info_dict['reason'] == []:
             info_dict['reason'].append('converge')
-        if charge_list != None and n_mol_list != None and set(charge_list) != {0}:
-            econ = 0.
-            econ_stderr = 0.
-            for i, charge in enumerate(charge_list):
-                diff, stderr = self.gmx.diffusion('npt.xtc', 'npt.tpr', group='MO%i' % (i))
-                econ += diff * charge_list[i]**2 * n_mol_list[i]
-                econ_stderr += stderr * charge_list[i]**2 * n_mol_list[i]
-            econ *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
-            econ_stderr *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
-            info_dict.update({'electrical conductivity from diffusion constant': [econ, econ_stderr]})
+
         le_and_stderr = []
         le_and_stderr.append(te_and_stderr[0] + pv_and_stderr[0])
         le_and_stderr.append(te_and_stderr[1] + pv_and_stderr[1])
@@ -309,6 +302,73 @@ class Npt(GmxSimulation):
         info_dict.update(ad_dict)
         return info_dict
 
+    # analyze diffusion constant
+    def analyze_diff(self, charge_list, n_mol_list, mstools_dir):
+        # get temperature and volume
+        temperature_and_stderr, volume_and_stderr = self.gmx.get_properties_stderr('npt.edr', ['Temperature', 'Volume'])
+
+        # calculate diffusion constant using Einstein relation
+        diff_e_dict = {'System': list(self.gmx.diffusion('npt.xtc', 'npt.tpr'))}
+        for i in range(len(n_mol_list)):
+            mol_name = 'MO%i' % (i)
+            diff_e_dict.update({mol_name: list(self.gmx.diffusion('npt.xtc', 'npt.tpr', group=mol_name))})
+
+        info_dict = {'diffusion constant and standard error via Einstein relation': diff_e_dict}
+
+        # estimate electrical conductivity using Nernst-Einstein relation
+        if charge_list != None and set(charge_list) != {0}:
+            econ = 0.
+            econ_stderr = 0.
+            for i, charge in enumerate(charge_list):
+                mol_name = 'MO%i' % (i)
+                diff, stderr = diff_e_dict.get(mol_name)
+                econ += diff * charge_list[i]**2 * n_mol_list[i]
+                econ_stderr += stderr * charge_list[i]**2 * n_mol_list[i]
+            econ *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
+            econ_stderr *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
+            info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Einstein diffusion constant': [econ, econ_stderr]})
+
+        # calculate diffusion constant using Green-Kubo relation
+        commands = []
+        self.gmx.trjconv('npt.tpr', 'npt.trr', 'traj.gro', skip=10)
+        commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
+        for cmd in commands:
+            sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
+            sp.communicate()
+        # os.remove('traj.gro')
+        # os.remove('nvt.trr')
+        from ...analyzer.acf import get_t_property_list, get_block_average
+        from ...analyzer.fitting import ExpConstfit, ExpConstval
+        # fit the data using exponential function
+        t_list, diff_list = get_t_property_list(property='diffusion constant', name='System')
+        n_block = len([t for t in t_list if t < 1])
+        coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:], get_block_average(diff_list, n_block=n_block)[2:])
+        diff_gk_dict = {'System': [coef[2], ExpConstval(t_list[-1], coef)]}
+        for i in range(len(n_mol_list)):
+            mol_name = 'MO%i' % (i)
+            t_list, diff_list = get_t_property_list(property='diffusion constant', name=mol_name)
+            n_block = len([t for t in t_list if t < 1])
+            coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
+                                      get_block_average(diff_list, n_block=n_block)[2:])
+            diff_gk_dict.update({mol_name: [coef[2], ExpConstval(t_list[-1], coef)]})
+        info_dict.update({'diffusion constant via Green-Kubo relation': diff_gk_dict})
+
+        # estimate electrical conductivity using Nernst-Einstein relation
+        if charge_list != None and set(charge_list) != {0}:
+            econ1 = 0.
+            econ2 = 0.
+            for i, charge in enumerate(charge_list):
+                mol_name = 'MO%i' % (i)
+                diff1, diff2 = diff_gk_dict.get(mol_name)
+                econ1 += diff1 * charge_list[i]**2 * n_mol_list[i]
+                econ2 += diff2 * charge_list[i]**2 * n_mol_list[i]
+            econ1 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
+            econ2 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
+            info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Green-Kubo diffusion constant': [econ1, econ2]})
+
+        return info_dict
+
+
     def analyze_acf(self, current=False, mstools_dir=None, weight=0.00):
         if mstools_dir is None:
             return {
@@ -322,7 +382,6 @@ class Npt(GmxSimulation):
         temperature = df.Temperature.mean()
         volume = df.Volume.mean()
 
-        from subprocess import Popen, PIPE
         # viscosity: pressure acf
         self.gmx.energy('npt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg')
         commands = [
