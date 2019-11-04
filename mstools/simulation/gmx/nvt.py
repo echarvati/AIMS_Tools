@@ -1,7 +1,7 @@
 import os, shutil
 from .gmx import GmxSimulation
 from ...wrapper.gmx import *
-import numpy as np
+from ...analyzer.acf import get_std_out
 
 class Nvt(GmxSimulation):
     def __init__(self, **kwargs):
@@ -66,13 +66,13 @@ class Nvt(GmxSimulation):
     def analyze_diff(self, charge_list, n_mol_list):
         # get temperature and volume
         volume_and_stderr = [self.gmx.get_volume_from_gro('nvt.gro'), 0.]
-        [temperature_and_stderr] = self.gmx.get_properties_stderr('nvt.edr', 'Temperature')
+        [temperature_and_stderr] = self.gmx.get_properties_stderr('nvt.edr', ['Temperature'])
 
         # calculate diffusion constant using Einstein relation
-        diff_e_dict = {'System': list(self.gmx.diffusion('nvt.xtc', 'nvt.tpr'))}
+        diff_e_dict = {'System': get_std_out(list(self.gmx.diffusion('nvt.xtc', 'nvt.tpr')))}
         for i in range(len(n_mol_list)):
             mol_name = 'MO%i' % (i)
-            diff_e_dict.update({mol_name: list(self.gmx.diffusion('nvt.xtc', 'nvt.tpr', group=mol_name))})
+            diff_e_dict.update({mol_name: get_std_out(list(self.gmx.diffusion('nvt.xtc', 'nvt.tpr', group=mol_name)))})
 
         info_dict = {'diffusion constant and standard error via Einstein relation': diff_e_dict}
 
@@ -87,7 +87,7 @@ class Nvt(GmxSimulation):
                 econ_stderr += stderr * charge_list[i]**2 * n_mol_list[i]
             econ *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
             econ_stderr *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
-            info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Einstein diffusion constant': [econ, econ_stderr]})
+            info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Einstein diffusion constant': get_std_out([econ, econ_stderr])})
 
         # calculate diffusion constant using Green-Kubo relation
         # os.remove('traj.gro')
@@ -98,14 +98,14 @@ class Nvt(GmxSimulation):
         t_list, diff_list = get_t_property_list(property='diffusion constant', name='System')
         n_block = len([t for t in t_list if t < 1])
         coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:], get_block_average(diff_list, n_block=n_block)[2:])
-        diff_gk_dict = {'System': [coef[2], ExpConstval(t_list[-1], coef)]}
+        diff_gk_dict = {'System': get_std_out([coef[2], ExpConstval(t_list[-1], coef)])}
         for i in range(len(n_mol_list)):
             mol_name = 'MO%i' % (i)
             t_list, diff_list = get_t_property_list(property='diffusion constant', name=mol_name)
             n_block = len([t for t in t_list if t < 1])
             coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
                                       get_block_average(diff_list, n_block=n_block)[2:])
-            diff_gk_dict.update({mol_name: [coef[2], ExpConstval(t_list[-1], coef)]})
+            diff_gk_dict.update({mol_name: get_std_out([coef[2], ExpConstval(t_list[-1], coef)])})
         info_dict.update({'diffusion constant via Green-Kubo relation': diff_gk_dict})
 
         # estimate electrical conductivity using Nernst-Einstein relation
@@ -119,7 +119,7 @@ class Nvt(GmxSimulation):
                 econ2 += diff2 * charge_list[i]**2 * n_mol_list[i]
             econ1 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
             econ2 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
-            info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Green-Kubo diffusion constant': [econ1, econ2]})
+            info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Green-Kubo diffusion constant': get_std_out([econ1, econ2])})
 
         return info_dict
 

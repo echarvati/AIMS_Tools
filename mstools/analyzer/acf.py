@@ -67,3 +67,12 @@ def get_t_property_list(property, dir=None, name=None, weight=0.00):
     t_list = np.array(info['#time(ps)'])
     property_list = np.array(info[Property_dict.get(property).get('property_unit')])
     return t_list, property_list
+
+def get_std_out(input):
+    if type(input)==float:
+        return float('%#.5e' % (input))
+    if type(input)==list:
+        output = []
+        for i in input:
+            output.append(float('%#.5e' % (i)))
+        return output
