@@ -108,13 +108,8 @@ class Npt(GmxSimulation):
 
         if acf:
             # diffusion constant
-            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', skip=10, get_cmd=True))
+            commands.append(self.gmx.trjconv('npt.tpr', 'npt.trr', 'traj.gro', skip=10, get_cmd=True))
             commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
-            # viscosity
-            commands.append(self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg', get_cmd=True))
-            volume = self.gmx.get_volume_from_gro('npt.gro')
-            weight = 0.00
-            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (T) + ' %.2f' % (weight))
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
@@ -387,8 +382,23 @@ class Npt(GmxSimulation):
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
             sp.communicate()
 
+    def analyze_vis(self,  mstools_dir, weight=0.00):
+        df = edr_to_df('npt.edr')
+        temperature = df.Temperature.mean()
+        volume = df.Volume.mean()
+        commands = []
+        commands.append(
+            self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg', get_cmd=True))
+        commands.append(
+            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
+                temperature) + ' %.2f' % (weight))
+        for cmd in commands:
+            sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
+            sp.communicate()
+
     def analyze_acf(self, mstools_dir, charge_list, n_mol_list, current=False, weight=0.00):
         info_dict = self.analyze_diff(charge_list, n_mol_list)
+        self.analyze_vis(mstools_dir=mstools_dir, weight=weight)
         if current:
             self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
 
