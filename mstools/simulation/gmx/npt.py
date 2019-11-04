@@ -401,7 +401,8 @@ class Npt(GmxSimulation):
         self.analyze_vis(mstools_dir=mstools_dir, weight=weight)
         if current:
             self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
-
+        os.remove('traj.gro')
+        os.remove('npt.trr')
         info_dict.update({
             'failed': [False],
             'continue': [False],

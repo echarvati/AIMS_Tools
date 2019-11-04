@@ -90,8 +90,6 @@ class Nvt(GmxSimulation):
             info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Einstein diffusion constant': get_std_out([econ, econ_stderr])})
 
         # calculate diffusion constant using Green-Kubo relation
-        # os.remove('traj.gro')
-        # os.remove('nvt.trr')
         from ...analyzer.acf import get_t_property_list, get_block_average
         from ...analyzer.fitting import ExpConstfit, ExpConstval
         # fit the data using exponential function
@@ -144,7 +142,8 @@ class Nvt(GmxSimulation):
         info_dict = self.analyze_diff(charge_list, n_mol_list)
         if current:
             self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
-
+        os.remove('traj.gro')
+        os.remove('nvt.trr')
         info_dict.update({
             'failed': [False],
             'continue': [False],
