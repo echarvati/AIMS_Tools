@@ -14,7 +14,7 @@ class Nvt(GmxSimulation):
 
     def prepare(self, prior_job_dir=None, gro='npt.gro', top='topol.top', T=298, jobname=None,
                 dt=0.001, nst_eq=int(4E5), nst_run=int(5E5), random_seed=-1, nst_edr=5, nst_trr=int(5E4),
-                tcoupl='v-rescale', **kwargs) -> [str]:
+                tcoupl='v-rescale', acf=False, mstools_dir=None, **kwargs) -> [str]:
         if prior_job_dir is None:
             raise Exception('prior_job_dir is needed for NVT simulation')
 
@@ -49,6 +49,11 @@ class Nvt(GmxSimulation):
         cmd = self.gmx.mdrun(name='nvt', nprocs=nprocs, get_cmd=True)
         commands.append(cmd)
 
+        if acf:
+            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', skip=10, get_cmd=True))
+            commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
+            commands.append('rm traj.gro')
+            commands.append('rm nvt.trr')
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 

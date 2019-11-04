@@ -530,13 +530,16 @@ class GMX:
         sp = Popen(cmd.split(), stdout=stdout, stderr=stderr)
         sp.communicate()
 
-    def trjconv(self, tpr, input_trj, output_trj, pbc_nojump=False, skip=1, silent=False, select='System'):
+    def trjconv(self, tpr, input_trj, output_trj, pbc_nojump=False, skip=1, silent=False, select='System', get_cmd=False):
         cmd = '%s -quiet -nobackup trjconv -s %s -f %s -o %s -skip %i' % (self.GMX_BIN, tpr, input_trj, output_trj, skip)
         if pbc_nojump:
             cmd += ' -pbc nojump'
-        (stdout, stderr) = (PIPE, PIPE) if silent else (None, None)
-        sp = Popen(cmd.split(), stdin=PIPE, stdout=stdout, stderr=stderr)
-        sp.communicate(input=select.encode())
+        if get_cmd:
+            return 'echo %s | ' % (select) + cmd
+        else:
+            (stdout, stderr) = (PIPE, PIPE) if silent else (None, None)
+            sp = Popen(cmd.split(), stdin=PIPE, stdout=stdout, stderr=stderr)
+            sp.communicate(input=select.encode())
     
     @staticmethod
     def generate_gpu_multidir_cmds(dirs: [str], commands: [str], n_parallel, n_gpu=0, n_omp=None, n_procs=None) -> [[str]]:
@@ -590,7 +593,7 @@ class GMX:
                     cmd += ' -ntomp %i' % n_thread
 
             else:
-                cmd = 'for i in %s; do cd $i; %s; done' % (' '.join(dirs), cmd)  # do it in every directory
+                cmd = 'for i in %s; \ndo cd $i;\n%s &\ndone\nwait\n' % (' '.join(dirs), cmd)  # do it in every directory
             return cmd
 
         commands_list: [[str]] = []
