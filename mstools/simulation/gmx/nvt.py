@@ -98,14 +98,14 @@ class Nvt(GmxSimulation):
         t_list, diff_list = get_t_property_list(property='diffusion constant', name='System')
         n_block = len([t for t in t_list if t < 1])
         coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:], get_block_average(diff_list, n_block=n_block)[2:])
-        diff_gk_dict = {'System': get_std_out([coef[2], ExpConstval(t_list[-1], coef)])}
+        diff_gk_dict = {'System': get_std_out([coef[1], ExpConstval(t_list[-1], coef)])}
         for i in range(len(n_mol_list)):
             mol_name = 'MO%i' % (i)
             t_list, diff_list = get_t_property_list(property='diffusion constant', name=mol_name)
             n_block = len([t for t in t_list if t < 1])
             coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
                                       get_block_average(diff_list, n_block=n_block)[2:])
-            diff_gk_dict.update({mol_name: get_std_out([coef[2], ExpConstval(t_list[-1], coef)])})
+            diff_gk_dict.update({mol_name: get_std_out([coef[1], ExpConstval(t_list[-1], coef)])})
         info_dict.update({'diffusion constant via Green-Kubo relation': diff_gk_dict})
 
         # estimate electrical conductivity using Nernst-Einstein relation
