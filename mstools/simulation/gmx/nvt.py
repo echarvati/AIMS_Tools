@@ -15,7 +15,7 @@ class Nvt(GmxSimulation):
 
     def prepare(self, prior_job_dir=None, gro='npt.gro', top='topol.top', T=298, jobname=None,
                 dt=0.001, nst_eq=int(4E5), nst_run=int(5E5), random_seed=-1, nst_edr=5, nst_trr=50,
-                tcoupl='v-rescale', diff_gk=False, mstools_dir=None, **kwargs) -> [str]:
+                tcoupl='v-rescale', diff_gk=True, mstools_dir=None, **kwargs) -> [str]:
         if prior_job_dir is None:
             raise Exception('prior_job_dir is needed for NVT simulation')
 
@@ -52,7 +52,7 @@ class Nvt(GmxSimulation):
 
         if diff_gk:
             # diffusion constant, do not used, very slow
-            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', get_cmd=True))
+            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', end=20, get_cmd=True))
             commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
         # viscosity
         commands.append(self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg', get_cmd=True))
@@ -68,7 +68,7 @@ class Nvt(GmxSimulation):
 
 
     # analyze diffusion constant
-    def analyze_diff(self, charge_list, n_mol_list, diff_gk=False):
+    def analyze_diff(self, charge_list, n_mol_list, diff_gk=True):
         # get temperature and volume
         volume_and_stderr = [self.gmx.get_volume_from_gro('nvt.gro'), 0.]
         [temperature_and_stderr] = self.gmx.get_properties_stderr('nvt.edr', ['Temperature'])
@@ -112,7 +112,7 @@ class Nvt(GmxSimulation):
                 coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
                                           get_block_average(diff_list, n_block=n_block)[2:])
                 diff_gk_dict.update({mol_name: get_std_out([coef[1], ExpConstval(t_list[-1], coef)])})
-            info_dict.update({'diffusion constant via Green-Kubo relation': diff_gk_dict})
+            info_dict.update({'diffusion constant-gk': diff_gk_dict})
 
             # estimate electrical conductivity using Nernst-Einstein relation
             if charge_list != None and set(charge_list) != {0}:
@@ -125,9 +125,7 @@ class Nvt(GmxSimulation):
                     econ2 += diff2 * charge_list[i] ** 2 * n_mol_list[i]
                 econ1 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
                 econ2 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
-                info_dict.update({
-                                     'Nernst-Einstein electrical conductivity and standard error via Green-Kubo diffusion constant': get_std_out(
-                                         [econ1, econ2])})
+                info_dict.update({'Nernst-Einstein electrical conductivity-gk': get_std_out([econ1, econ2])})
             os.remove('traj.gro')
 
         return info_dict

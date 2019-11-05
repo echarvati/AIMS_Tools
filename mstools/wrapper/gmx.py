@@ -530,8 +530,10 @@ class GMX:
         sp = Popen(cmd.split(), stdout=stdout, stderr=stderr)
         sp.communicate()
 
-    def trjconv(self, tpr, input_trj, output_trj, pbc_nojump=False, skip=1, silent=False, select='System', get_cmd=False):
+    def trjconv(self, tpr, input_trj, output_trj, pbc_nojump=False, skip=1, end=None, silent=False, select='System', get_cmd=False):
         cmd = '%s -quiet -nobackup trjconv -s %s -f %s -o %s -skip %i' % (self.GMX_BIN, tpr, input_trj, output_trj, skip)
+        if end is not None:
+            cmd += ' -e %i' % (end)
         if pbc_nojump:
             cmd += ' -pbc nojump'
         if get_cmd:
