@@ -15,7 +15,7 @@ class Nvt(GmxSimulation):
 
     def prepare(self, prior_job_dir=None, gro='npt.gro', top='topol.top', T=298, jobname=None,
                 dt=0.001, nst_eq=int(4E5), nst_run=int(5E5), random_seed=-1, nst_edr=5, nst_trr=50,
-                tcoupl='v-rescale', diff_gk=True, mstools_dir=None, **kwargs) -> [str]:
+                tcoupl='v-rescale', diff_gk=False, mstools_dir=None, **kwargs) -> [str]:
         if prior_job_dir is None:
             raise Exception('prior_job_dir is needed for NVT simulation')
 
