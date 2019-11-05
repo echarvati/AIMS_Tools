@@ -131,9 +131,8 @@ class Nvt(GmxSimulation):
         return info_dict
 
     # analyze electrical conductivity
-    def analyze_econ(self, mstools_dir, weight=0.00, trr=True):
+    def analyze_econ(self, mstools_dir, weight=0.00):
         from ...panedr import edr_to_df
-        if trr:
         df = edr_to_df('nvt.edr')
         temperature = df.Temperature.mean()
         volume = self.gmx.get_volume_from_gro('nvt.gro')
