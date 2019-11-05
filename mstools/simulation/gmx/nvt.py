@@ -143,7 +143,7 @@ class Nvt(GmxSimulation):
     def analyze_vis(self,  mstools_dir, weight=0.00):
         df = edr_to_df('nvt.edr')
         temperature = df.Temperature.mean()
-        volume = df.Volume.mean()
+        volume = self.gmx.get_volume_from_gro('nvt.gro')
         self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg')
         commands = []
         commands.append(
