@@ -119,6 +119,7 @@ class Nvt(GmxSimulation):
                 info_dict.update({
                                      'Nernst-Einstein electrical conductivity and standard error via Green-Kubo diffusion constant': get_std_out(
                                          [econ1, econ2])})
+            os.remove('traj.gro')
 
         return info_dict
 
@@ -158,7 +159,6 @@ class Nvt(GmxSimulation):
         self.analyze_vis(mstools_dir=mstools_dir, weight=weight)
         if current:
             self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
-        os.remove('traj.gro')
         os.remove('nvt.trr')
         info_dict.update({
             'failed': [False],
