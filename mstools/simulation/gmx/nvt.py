@@ -131,8 +131,9 @@ class Nvt(GmxSimulation):
         return info_dict
 
     # analyze electrical conductivity
-    def analyze_econ(self, mstools_dir, weight=0.00):
+    def analyze_econ(self, mstools_dir, weight=0.00, trr=True):
         from ...panedr import edr_to_df
+        if trr:
         df = edr_to_df('nvt.edr')
         temperature = df.Temperature.mean()
         volume = self.gmx.get_volume_from_gro('nvt.gro')
@@ -163,10 +164,11 @@ class Nvt(GmxSimulation):
 
     def analyze_acf(self, mstools_dir, charge_list, n_mol_list, current=False, weight=0.00):
         info_dict = self.analyze_diff(charge_list, n_mol_list)
-        # self.analyze_vis(mstools_dir=mstools_dir, weight=weight) this function is implemented in prepare
-        if current:
-            self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
-        os.remove('nvt.trr')
+        if os.path.exists('nvt.trr'):
+            # self.analyze_vis(mstools_dir=mstools_dir, weight=weight) this function is implemented in prepare
+            if current:
+                self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
+            os.remove('nvt.trr')
         info_dict.update({
             'failed': [False],
             'continue': [False],
