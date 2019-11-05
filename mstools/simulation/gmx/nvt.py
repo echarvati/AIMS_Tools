@@ -54,6 +54,14 @@ class Nvt(GmxSimulation):
             # diffusion constant, do not used, very slow
             commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', get_cmd=True))
             commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
+        # viscosity
+        commands.append(self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg', get_cmd=True))
+        weight = 0.00
+        temperature = self.gmx.get_temperature_from_mdp('grompp-nvt.mdp')
+        volume = self.gmx.get_volume_from_gro('npt.gro')
+        commands.append(
+            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
+                temperature) + ' %.2f' % (weight))
 
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
@@ -157,7 +165,7 @@ class Nvt(GmxSimulation):
 
     def analyze_acf(self, mstools_dir, charge_list, n_mol_list, current=False, weight=0.00):
         info_dict = self.analyze_diff(charge_list, n_mol_list)
-        self.analyze_vis(mstools_dir=mstools_dir, weight=weight)
+        # self.analyze_vis(mstools_dir=mstools_dir, weight=weight) this function is implemented in prepare
         if current:
             self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
         os.remove('nvt.trr')
