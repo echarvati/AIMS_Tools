@@ -708,6 +708,12 @@ class GMX:
         box = self.get_box_from_gro(gro)
         return box[0] * box[1] * box[2]
 
+    def get_temperature_from_mdp(self, mdp):
+        for line in open(mdp, 'r').readlines():
+            if line.startswith('ref-t'):
+                return float(line.split('=')[1])
+        return None
+
     def current(self, trr, tpr, begin=0, end=None, skip=None, out=None, caf=False, select='System'):
         cmd = '%s -quiet -nobackup current -f %s -s %s -b %s' % (self.GMX_BIN, trr, tpr, str(begin))
         if end is not None:

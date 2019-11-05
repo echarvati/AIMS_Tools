@@ -14,7 +14,7 @@ class Nvt(GmxSimulation):
         pass
 
     def prepare(self, prior_job_dir=None, gro='npt.gro', top='topol.top', T=298, jobname=None,
-                dt=0.001, nst_eq=int(4E5), nst_run=int(5E5), random_seed=-1, nst_edr=5, nst_trr=5,
+                dt=0.001, nst_eq=int(4E5), nst_run=int(5E5), random_seed=-1, nst_edr=5, nst_trr=50,
                 tcoupl='v-rescale', diff_gk=False, mstools_dir=None, **kwargs) -> [str]:
         if prior_job_dir is None:
             raise Exception('prior_job_dir is needed for NVT simulation')
@@ -52,8 +52,18 @@ class Nvt(GmxSimulation):
 
         if diff_gk:
             # diffusion constant, do not used, very slow
-            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', skip=10, get_cmd=True))
+            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', get_cmd=True))
             commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
+        # viscosity
+        commands.append(self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg', get_cmd=True))
+        weight = 0.00
+        temperature = self.gmx.get_temperature_from_mdp('grompp-nvt.mdp')
+        volume = self.gmx.get_volume_from_gro('npt.gro')
+        commands.append(
+            os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
+                temperature) + ' %.2f' % (weight))
+        # electrical conductivity
+
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
         return commands
 
