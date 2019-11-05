@@ -2,6 +2,12 @@ import numpy as np
 import math, os
 import pandas as pd
 
+Property_dict = {
+    'viscosity': {'abbr': 'vis', 'property_unit': 'viscosity(mPa·s)'},
+    'electrical conductivity': {'abbr': 'econ', 'property_unit': 'electrical_conductivity(S/m)'},
+    'diffusion constant': {'abbr': 'diff', 'property_unit': 'diffusion_constant(cm^2/s)'},
+}
+
 def get_acf(x_list, y_list, mean_shift=False):
     '''
     x_list must be evenly spaced
@@ -48,11 +54,6 @@ def get_block_average(list, n_block=None):
     return np.array(list_out)
 
 def get_t_property_list(property, dir=None, name=None, weight=0.00):
-    Property_dict = {
-        'viscosity': {'abbr': 'vis', 'property_unit': 'viscosity(mPa·s)'},
-        'electrical conductivity': {'abbr': 'econ', 'property_unit': 'electrical_conductivity(S/m)'},
-        'diffusion constant': {'abbr': 'diff', 'property_unit': 'diffusion_constant(cm^2/s)'},
-    }
     if Property_dict.get(property) is None:
         raise Exception('invalid property: %s', property)
     file_name = Property_dict.get(property).get('abbr')
