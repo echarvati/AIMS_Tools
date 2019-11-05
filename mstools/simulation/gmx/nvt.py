@@ -68,7 +68,7 @@ class Nvt(GmxSimulation):
 
 
     # analyze diffusion constant
-    def analyze_diff(self, charge_list, n_mol_list, diff_gk=True):
+    def analyze_diff(self, charge_list, n_mol_list, diff_gk=False):
         # get temperature and volume
         volume_and_stderr = [self.gmx.get_volume_from_gro('nvt.gro'), 0.]
         [temperature_and_stderr] = self.gmx.get_properties_stderr('nvt.edr', ['Temperature'])
