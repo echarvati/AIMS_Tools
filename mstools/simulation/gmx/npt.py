@@ -37,7 +37,7 @@ class Npt(GmxSimulation):
 
     def prepare(self, model_dir='.', gro='conf.gro', top='topol.top', T=298, P=1, jobname=None, TANNEAL=800,
                 dt=0.002, nst_eq=int(4E5), nst_run=int(5E5), nst_edr=100, nst_trr=int(5E4), nst_xtc=int(1E3),
-                random_seed=-1, drde=False, tcoupl='langevin', acf=False, mstools_dir=None, **kwargs) -> [str]:
+                random_seed=-1, drde=False, tcoupl='langevin', diff_gk=False, mstools_dir=None, **kwargs) -> [str]:
         if os.path.abspath(model_dir) != os.getcwd():
             shutil.copy(os.path.join(model_dir, gro), gro)
             shutil.copy(os.path.join(model_dir, top), top)
@@ -106,8 +106,8 @@ class Npt(GmxSimulation):
         cmd = self.gmx.mdrun(name='hvap', nprocs=nprocs, n_omp=nprocs, rerun='npt.xtc', get_cmd=True)
         commands.append(cmd)
 
-        if acf:
-            # diffusion constant
+        if diff_gk:
+            # diffusion constant, do not used, very slow
             commands.append(self.gmx.trjconv('npt.tpr', 'npt.trr', 'traj.gro', skip=10, get_cmd=True))
             commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
         self.jobmanager.generate_sh(os.getcwd(), commands, name=jobname or self.procedure)
@@ -307,7 +307,7 @@ class Npt(GmxSimulation):
         return info_dict
 
     # analyze diffusion constant
-    def analyze_diff(self, charge_list, n_mol_list):
+    def analyze_diff(self, charge_list, n_mol_list, diff_gk=False):
         # get temperature and volume
         temperature_and_stderr, volume_and_stderr = self.gmx.get_properties_stderr('npt.edr', ['Temperature', 'Volume'])
 
@@ -332,37 +332,39 @@ class Npt(GmxSimulation):
             econ_stderr *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
             info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Einstein diffusion constant': [econ, econ_stderr]})
 
-        # calculate diffusion constant using Green-Kubo relation
-        # os.remove('traj.gro')
-        # os.remove('nvt.trr')
-        from ...analyzer.acf import get_t_property_list, get_block_average
-        from ...analyzer.fitting import ExpConstfit, ExpConstval
-        # fit the data using exponential function
-        t_list, diff_list = get_t_property_list(property='diffusion constant', name='System')
-        n_block = len([t for t in t_list if t < 1])
-        coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:], get_block_average(diff_list, n_block=n_block)[2:])
-        diff_gk_dict = {'System': [coef[1], ExpConstval(t_list[-1], coef)]}
-        for i in range(len(n_mol_list)):
-            mol_name = 'MO%i' % (i)
-            t_list, diff_list = get_t_property_list(property='diffusion constant', name=mol_name)
+        if diff_gk:
+            # calculate diffusion constant using Green-Kubo relation
+            from ...analyzer.acf import get_t_property_list, get_block_average
+            from ...analyzer.fitting import ExpConstfit, ExpConstval
+            # fit the data using exponential function
+            t_list, diff_list = get_t_property_list(property='diffusion constant', name='System')
             n_block = len([t for t in t_list if t < 1])
             coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
                                       get_block_average(diff_list, n_block=n_block)[2:])
-            diff_gk_dict.update({mol_name: [coef[1], ExpConstval(t_list[-1], coef)]})
-        info_dict.update({'diffusion constant via Green-Kubo relation': diff_gk_dict})
-
-        # estimate electrical conductivity using Nernst-Einstein relation
-        if charge_list != None and set(charge_list) != {0}:
-            econ1 = 0.
-            econ2 = 0.
-            for i, charge in enumerate(charge_list):
+            diff_gk_dict = {'System': [coef[1], ExpConstval(t_list[-1], coef)]}
+            for i in range(len(n_mol_list)):
                 mol_name = 'MO%i' % (i)
-                diff1, diff2 = diff_gk_dict.get(mol_name)
-                econ1 += diff1 * charge_list[i]**2 * n_mol_list[i]
-                econ2 += diff2 * charge_list[i]**2 * n_mol_list[i]
-            econ1 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
-            econ2 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
-            info_dict.update({'Nernst-Einstein electrical conductivity and standard error via Green-Kubo diffusion constant': [econ1, econ2]})
+                t_list, diff_list = get_t_property_list(property='diffusion constant', name=mol_name)
+                n_block = len([t for t in t_list if t < 1])
+                coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
+                                          get_block_average(diff_list, n_block=n_block)[2:])
+                diff_gk_dict.update({mol_name: [coef[1], ExpConstval(t_list[-1], coef)]})
+            info_dict.update({'diffusion constant via Green-Kubo relation': diff_gk_dict})
+
+            # estimate electrical conductivity using Nernst-Einstein relation
+            if charge_list != None and set(charge_list) != {0}:
+                econ1 = 0.
+                econ2 = 0.
+                for i, charge in enumerate(charge_list):
+                    mol_name = 'MO%i' % (i)
+                    diff1, diff2 = diff_gk_dict.get(mol_name)
+                    econ1 += diff1 * charge_list[i] ** 2 * n_mol_list[i]
+                    econ2 += diff2 * charge_list[i] ** 2 * n_mol_list[i]
+                econ1 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
+                econ2 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
+                info_dict.update({
+                                     'Nernst-Einstein electrical conductivity and standard error via Green-Kubo diffusion constant': [
+                                         econ1, econ2]})
 
         return info_dict
 
@@ -382,13 +384,13 @@ class Npt(GmxSimulation):
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
             sp.communicate()
 
+    # analyze viscosity
     def analyze_vis(self,  mstools_dir, weight=0.00):
         df = edr_to_df('npt.edr')
         temperature = df.Temperature.mean()
         volume = df.Volume.mean()
+        self.gmx.energy('npt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg')
         commands = []
-        commands.append(
-            self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg', get_cmd=True))
         commands.append(
             os.path.join(mstools_dir, 'mstools', 'cpp', 'vis-gk') + ' pressure.xvg' + ' %f' % (volume) + ' %f' % (
                 temperature) + ' %.2f' % (weight))
