@@ -160,7 +160,7 @@ class GMX:
             cmd += ' -fluct_props'
         if get_cmd:
             property_str = '\\n'.join(properties)
-            cmd = 'echo "%s" | %s' % (property_str, cmd)
+            cmd = 'echo -e "%s" | %s' % (property_str, cmd)
             return cmd
         else:
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
