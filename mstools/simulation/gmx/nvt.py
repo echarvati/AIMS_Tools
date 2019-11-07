@@ -176,3 +176,4 @@ class Nvt(GmxSimulation):
 
         return info_dict
 
+    # def post_process(self, **kwargs):
