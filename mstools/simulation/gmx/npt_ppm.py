@@ -37,7 +37,7 @@ class NptPPM(GmxSimulation):
         '''
 
     def prepare(self, prior_job_dir=None, gro='conf.gro', top='topol.top', T=298, P=1, jobname=None,
-                dt=0.001, nst_eq=int(1E5), nst_edr=500, replicate=None,
+                dt=0.001, nst_eq=int(1E5), nst_edr=500, replicate=None, random_seed=-1,
                 **kwargs) -> [str]:
         self.dt = dt
         if prior_job_dir is None:
@@ -63,7 +63,7 @@ class NptPPM(GmxSimulation):
             # NPT-PPM equilibrium with Nose-Hoover thermostat and Parrinello-Rahman barostat
             # TODO should test the validity of V-rescale thermostat. V-rescale is preferred if it works
             self.gmx.prepare_mdp_from_template('t_npt_ppm.mdp', mdp_out='grompp-%s.mdp' % name_eq, T=T, P=P,
-                                               nsteps=nst_eq, nstxtcout=0, restart=True,
+                                               nsteps=nst_eq, nstxtcout=0, gen_seed=random_seed,
                                                tcoupl='v-rescale', ppm=ppm)
             cmd = self.gmx.grompp(mdp='grompp-%s.mdp' % name_eq, gro=gro, top=top,
                                   tpr_out='%s.tpr' % name_eq, get_cmd=True)
