@@ -175,3 +175,4 @@ class Nvt(GmxSimulation):
         })
 
         return info_dict
+
