@@ -469,11 +469,11 @@ class Npt(GmxSimulation):
             t_comp_poly3[p] = [list(map(round3, _t_comp_coeff)), round3(_t_comp_score), min(_t_list), max(_t_list)]
 
             post_result = {
-                'density': t_p_dens_stderr_list,
-                'einter': t_p_eint_stderr_list,
-                'liquid enthalpy': t_p_hl_stderr_list,
-                'compress': t_p_comp_stderr_list,
-                'density-t-poly3': t_dens_poly3,
+                'density': t_p_dens_stderr_list, # [t, p, [density, stderr]]
+                'einter': t_p_eint_stderr_list, # [t, p, [intermolecular energy, stderr]]
+                'liquid enthalpy': t_p_hl_stderr_list, # [t, p, [liquid enthalpy, stderr]]
+                'compress': t_p_comp_stderr_list, # [t, p, [compressibility, stderr]]
+                'density-t-poly3': t_dens_poly3, # {'pressure': [[coeff], score, t_min, t_max]}
                 'einter-t-poly3': t_eint_poly3,
                 'hl-t-poly3': t_hl_poly3,
                 'compress-t-poly3': t_comp_poly3,
@@ -552,7 +552,7 @@ class Npt(GmxSimulation):
             t_comp_poly3[p] = [list(map(round3, _t_comp_coeff)), round3(_t_comp_score), min(_t_list), max(_t_list)]
 
         post_result = {
-            'density'         : t_p_dens_stderr_list,
+            'density'         : t_p_dens_stderr_list, # [t, p, [dens]]
             'einter'          : t_p_eint_stderr_list,
             'liquid enthalpy' : t_p_hl_stderr_list,
             'compress'        : t_p_comp_stderr_list,

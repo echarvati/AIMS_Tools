@@ -233,10 +233,10 @@ class Nvt(GmxSimulation):
 
             post_result = {
                 'p': P_list[0],
-                'viscosity': t_p_viscosity_score_list,
-                'electrical conductivity': t_p_econ_score_list,
-                'diffusion constant': t_p_diff_list,
-                'Nernst-Einstein electrical conductivity': t_p_NEecon_stderr_list,
+                'viscosity': t_p_viscosity_score_list, # [t, p, viscosity, score]
+                'electrical conductivity': t_p_econ_score_list, # [t, p, econ, score]
+                'diffusion constant': t_p_diff_list, # [t, p, diff_dict{name: [diff, stderr]}]
+                'Nernst-Einstein electrical conductivity': t_p_NEecon_stderr_list, # [t, p, [value, stderr]]
                 'vis-t-VTF': t_vis_VTF,
                 'econ-t-poly3': t_econ_poly3,
                 'NEecon-t-poly3': t_NEecon_poly3,
