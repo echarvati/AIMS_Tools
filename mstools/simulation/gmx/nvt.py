@@ -52,7 +52,7 @@ class Nvt(GmxSimulation):
 
         if diff_gk:
             # diffusion constant, do not used, very slow
-            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', end=20, get_cmd=True))
+            commands.append(self.gmx.trjconv('nvt.tpr', 'nvt.trr', 'traj.gro', end=500, get_cmd=True))
             commands.append(os.path.join(mstools_dir, 'mstools', 'cpp', 'diff-gk') + ' traj.gro')
         # viscosity
         commands.append(self.gmx.energy('nvt.edr', properties=['Pres-XY', 'Pres-XZ', 'Pres-YZ'], out='pressure.xvg', get_cmd=True))
@@ -161,13 +161,16 @@ class Nvt(GmxSimulation):
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
             sp.communicate()
 
-    def analyze_acf(self, mstools_dir, charge_list, n_mol_list, current=False, weight=0.00):
+    def analyze_acf(self, mstools_dir, charge_list, n_mol_list, current=False, delete_trr=True, weight=0.00):
         info_dict = self.analyze_diff(charge_list, n_mol_list)
-        if os.path.exists('nvt.trr'):
+        if current:
             # self.analyze_vis(mstools_dir=mstools_dir, weight=weight) this function is implemented in prepare
-            if current:
-                self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
-            os.remove('nvt.trr')
+            self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
+        if delete_trr:
+            if os.path.exists('nvt.trr'):
+                os.remove('nvt.trr')
+            if os.path.exists('traj.gro'):
+                os.remove('traj.gro')
         info_dict.update({
             'failed': [False],
             'continue': [False],
