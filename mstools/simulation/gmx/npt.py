@@ -1,5 +1,5 @@
 import os
-import shutil
+import shutil, numpy as np
 from subprocess import Popen, PIPE
 
 from .gmx import GmxSimulation
@@ -425,22 +425,18 @@ class Npt(GmxSimulation):
 
     @staticmethod
     def post_process(T_list, P_list, result_list, n_mol_list, **kwargs) -> (dict, str):
-        t_set = set(T_list)
-        p_set = set(P_list)
         def round3(x):
             return float('%.3e' % x)
+        t_set = set(T_list)
+        p_set = set(P_list)
 
-        if len(p_set)==1:
-            dens_stderr_list = [list(map(round3, result['density'])) for result in result_list]
-            eint_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['einter'])) for result in result_list]
-            # hl_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]), result['liquid enthalpy'])) for result in result_list]
-            hl_stderr_list = [list(map(lambda x: round3(x / n_mol_list[0]),
-                                       [result['einter'][0] + result['kinetic energy'][0] + result['pV'][0],
-                                        result['einter'][1] + result['kinetic energy'][1] + result['pV'][1]])) for
-                              result in
-                              result_list]
-            comp_stderr_list = [list(map(round3, result['compress'])) for result in result_list]
-            econ_stderr_list = [list(map(round3, result['electrical conductivity from diffusion constant'])) for result in result_list]
+        mols_number = sum(n_mol_list)
+        if len(p_set) == 1:
+            dens_stderr_list = [result['density'] for result in result_list]
+            eint_stderr_list = [(np.array(result['einter']) / mols_number).tolist() for result in result_list]
+            hl_stderr_list = [((np.array(result['einter']) + np.array(result['kinetic energy']) + np.array(result['pV']))
+                              / mols_number).tolist() for result in result_list]
+            comp_stderr_list = [result['compress'] for result in result_list]
 
             t_p_dens_stderr_list = list(map(list, zip(T_list, P_list, dens_stderr_list)))
             t_p_dens_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
@@ -450,44 +446,37 @@ class Npt(GmxSimulation):
             t_p_hl_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
             t_p_comp_stderr_list = list(map(list, zip(T_list, P_list, comp_stderr_list)))
             t_p_comp_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
-            t_p_econ_stderr_list = list(map(list, zip(T_list, P_list, econ_stderr_list)))
-            t_p_econ_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
 
             _t_list = [element[0] for element in t_p_dens_stderr_list]
             _dens_list = [element[2][0] for element in t_p_dens_stderr_list]
             _eint_list = [element[2][0] for element in t_p_eint_stderr_list]
             _hl_list = [element[2][0] for element in t_p_hl_stderr_list]
             _comp_list = [element[2][0] for element in t_p_comp_stderr_list]
-            _econ_list = [element[2][0] for element in t_p_econ_stderr_list]
             from ...analyzer.fitting import polyfit
             _t_dens_coeff, _t_dens_score = polyfit(_t_list, _dens_list, 3)
             _t_eint_coeff, _t_eint_score = polyfit(_t_list, _eint_list, 3)
             _t_hl_coeff, _t_hl_score = polyfit(_t_list, _hl_list, 3)
             _t_comp_coeff, _t_comp_score = polyfit(_t_list, _comp_list, 3)
-            _t_econ_coeff, _t_econ_score = polyfit(_t_list, _econ_list, 3)
 
             p = str(P_list[0])
             t_dens_poly3 = {}
             t_eint_poly3 = {}
             t_hl_poly3 = {}
             t_comp_poly3 = {}
-            t_econ_poly3 = {}
             t_dens_poly3[p] = [list(map(round3, _t_dens_coeff)), round3(_t_dens_score), min(_t_list), max(_t_list)]
             t_eint_poly3[p] = [list(map(round3, _t_eint_coeff)), round3(_t_eint_score), min(_t_list), max(_t_list)]
             t_hl_poly3[p]   = [list(map(round3, _t_hl_coeff  )), round3(_t_hl_score  ), min(_t_list), max(_t_list)]
             t_comp_poly3[p] = [list(map(round3, _t_comp_coeff)), round3(_t_comp_score), min(_t_list), max(_t_list)]
-            t_econ_poly3[p] = [list(map(round3, _t_econ_coeff)), round3(_t_econ_score), min(_t_list), max(_t_list)]
 
             post_result = {
                 'density': t_p_dens_stderr_list,
                 'einter': t_p_eint_stderr_list,
+                'liquid enthalpy': t_p_hl_stderr_list,
                 'compress': t_p_comp_stderr_list,
-                'electrical conductivity from diffusion constant': t_p_econ_stderr_list,
                 'density-t-poly3': t_dens_poly3,
                 'einter-t-poly3': t_eint_poly3,
                 'hl-t-poly3': t_hl_poly3,
                 'compress-t-poly3': t_comp_poly3,
-                'econ-t-poly3': t_econ_poly3,
             }
             return post_result, 'Single pressure simulation'
 

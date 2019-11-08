@@ -72,7 +72,7 @@ def get_t_property_list(property, dir=None, name=None, weight=0.00):
 def get_std_out(input):
     if type(input)==float:
         return float('%#.5e' % (input))
-    if type(input)==list:
+    if type(input) == list:
         output = []
         for i in input:
             output.append(float('%#.5e' % (i)))

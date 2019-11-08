@@ -176,4 +176,67 @@ class Nvt(GmxSimulation):
 
         return info_dict
 
-    # def post_process(self, **kwargs):
+    @staticmethod
+    def post_process(T_list, P_list, result_list, **kwargs):
+        def round5(x):
+            return float('%.5e' % x)
+        t_set = set(T_list)
+        p_set = set(P_list)
+        if len(p_set) == 1:
+            t_p_viscosity_score_list = []
+            t_p_econ_score_list = []
+            t_p_NEecon_stderr_list = []
+            t_p_diff_list = []
+            for i, result in enumerate(result_list):
+                t_p_viscosity_score_list.append([T_list[i], P_list[i], result.get('viscosity'), result.get('vis_score')]) # [t, p, value, score]
+                t_p_econ_score_list.append([T_list[i], P_list[i], result.get('electrical conductivity'), result.get('econ_score')]) # [t, p, value, score]
+                t_p_NEecon_stderr_list.append([T_list[i], P_list[i], result.get('Nernst-Einstein electrical conductivity')]) # [t, p, [value, stderr]]
+                t_p_diff_list.append([T_list[i], P_list[i], result.get('diffusion constant')]) # [t, p, diff_dict]
+
+            t_p_viscosity_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+            t_p_econ_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+            t_p_NEecon_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+            t_p_diff_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+
+            _t_list = [element[0] for element in t_p_viscosity_score_list]
+            _vis_list = [element[2] for element in t_p_viscosity_score_list]
+            _econ_list = [element[2] for element in t_p_econ_score_list]
+            _NEecon_list = [element[2][0] for element in t_p_NEecon_stderr_list]
+            _name_list = t_p_diff_list[0][2].keys()
+            _diff_list = {name: [] for name in _name_list}
+            for element in t_p_diff_list:
+                for name in _name_list:
+                    _diff_list.get(name).append(element[2].get(name))
+
+            from ...analyzer.fitting import polyfit, VTFfit
+            _t_vis_coeff, _t_vis_score = VTFfit(_t_list, _vis_list)
+            _t_econ_coeff, _t_econ_score = polyfit(_t_list, _econ_list, 3)
+            _t_NEecon_coeff, _t_NEecon_score = polyfit(_t_list, _NEecon_list, 3)
+            _t_diff_coeff_score = {}
+            for name in _name_list:
+                _t_diff_coeff_score[name] = polyfit(_t_list, _diff_list.get(name), 3)
+
+            p = str(P_list[0])
+            t_vis_VTF = {}
+            t_econ_poly3 = {}
+            t_NEecon_poly3 = {}
+            t_diff_poly3 = {}
+            t_vis_VTF[p] = [list(map(round5, _t_vis_coeff)), round5(_t_vis_score), min(_t_list), max(_t_list)]
+            t_econ_poly3[p] = [list(map(round5, _t_econ_coeff)), round5(_t_econ_score), min(_t_list), max(_t_list)]
+            t_NEecon_poly3[p] = [list(map(round5, _t_NEecon_coeff)), round5(_t_NEecon_score), min(_t_list), max(_t_list)]
+            t_diff_poly3[p] = [{}, min(_t_list), max(_t_list)]
+            for name in _name_list:
+                t_diff_poly3[p][0][name] = [list(map(round5, _t_diff_coeff_score[0])), round5(_t_diff_coeff_score[1])]
+
+            post_result = {
+                'viscosity': t_p_viscosity_score_list,
+                'electrical conductivity': t_p_econ_score_list,
+                'diffusion constant': t_p_diff_list,
+                'Nernst-Einstein electrical conductivity': t_p_NEecon_stderr_list,
+                'vis-t-VTF': t_vis_VTF,
+                'econ-t-poly3': t_econ_poly3,
+                'NEecon-t-poly3': t_NEecon_poly3,
+                'diff-t-poly3': t_diff_poly3,
+            }
+            return post_result, 'time decomposition method, green-kubo'
+
