@@ -177,7 +177,7 @@ class Nvt(GmxSimulation):
         return info_dict
 
     @staticmethod
-    def post_process(T_list, P_list, result_list, **kwargs):
+    def post_process(T_list, P_list, result_list, **kwargs) -> (dict, str):
         def round5(x):
             return float('%.5e' % x)
         t_set = set(T_list)
@@ -229,6 +229,7 @@ class Nvt(GmxSimulation):
                 t_diff_poly3[p][0][name] = [list(map(round5, _t_diff_coeff_score[0])), round5(_t_diff_coeff_score[1])]
 
             post_result = {
+                'p': P_list[0],
                 'viscosity': t_p_viscosity_score_list,
                 'electrical conductivity': t_p_econ_score_list,
                 'diffusion constant': t_p_diff_list,
@@ -239,4 +240,13 @@ class Nvt(GmxSimulation):
                 'diff-t-poly3': t_diff_poly3,
             }
             return post_result, 'time decomposition method, green-kubo'
+
+    @staticmethod
+    def get_post_data(post_result, T, P, **kwargs) -> dict:
+        if post_result.get('p') is not None:
+            if P != post_result.get('p'):
+                raise Exception('for single pressure post_result, P must be the same')
+        _t_vis_coeff = post_result.get('viscosity')
+
+
 
