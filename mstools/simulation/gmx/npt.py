@@ -730,28 +730,4 @@ class Npt(GmxSimulation):
         }
         result.update(ad_dict)
 
-        econ = None
-        if len(post_result['econ-t-poly3'])>=5:
-            _p_econ_list = []
-            for _p in post_result['econ-t-poly3']:
-                coef, score, tmin, tmax = post_result['econ-t-poly3'][str(_p)]
-                if score < converge_criterion or T < tmin - 10 or T > tmax + 10:
-                    continue
-
-                econ = polyval(T, coef)
-                _p_econ_list.append([_p, econ])
-            if len(_p_econ_list) >= 5:
-                coef, score = polyfit(*zip(*_p_econ_list), 3)
-                _p_list = list(zip(*_p_comp_list))[0]
-                if P > min(_p_list) - 10 and P < max(_p_list) + 10:
-                    econ = polyval(P, coef)  # kJ/mol
-        elif str(P) in post_result['econ-t-poly3'].keys():
-            coef, score, tmin, tmax = post_result['econ-t-poly3'][str(P)]
-            if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
-                econ = polyval(T, coef)
-        ad_dict = {
-            'electrical conductivity': econ,
-        }
-        result.update(ad_dict)
-
         return result
