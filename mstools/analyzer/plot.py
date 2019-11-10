@@ -5,9 +5,10 @@ def plot(x_list, y_list):
     plt.show()
 
 def gnuplot(output, x_min, x_max, y_min, y_max, xlabel, ylabel, title, txt_list=[], type_list=[], title_list=[], x_log_scale=False, y_log_scale=False):
-    f = open('1.gpi', 'w')
+
+    f = open('%s.gpi' % (output), 'w')
     info = 'set terminal pngcairo size 1000,800 enhanced font \'Times New Roman,25\'\n'
-    info += 'set output "%s"\n' % (output)
+    info += 'set output "%s.png"\n' % (output)
     info += 'set title "%s"\n' % (title)
     info += 'set border lw 1.5\n'
 
@@ -33,4 +34,6 @@ def gnuplot(output, x_min, x_max, y_min, y_max, xlabel, ylabel, title, txt_list=
             info += '"%s" u 1:2:3 with errorbars ls %i title "%s"' % (txt, i+1, title_list[i])
         if i + 1 != len(txt_list):
             info += ', \\\n'
+    f.write(info)
 
+    cmd = 'gnuplot < %s.gpi' % (output)
