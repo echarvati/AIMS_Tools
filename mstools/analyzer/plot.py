@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import subprocess
+from subprocess import Popen, PIPE
 
 def plot(x_list, y_list):
     plt.plot(x_list, y_list)
@@ -15,8 +17,8 @@ def gnuplot(output, x_min, x_max, y_min, y_max, xlabel, ylabel, title, txt_list=
     info += 'set xlabel "%s"\n' % (xlabel)
     info += 'set ylabel "%s"\n' % (ylabel)
 
-    info += 'set xr [%f, %f]\n' % (x_min, x_max)
-    info += 'set yr [%f, %f]\n' % (y_min, y_max)
+    info += 'set xr [%f:%f]\n' % (x_min, x_max)
+    info += 'set yr [%f:%f]\n' % (y_min, y_max)
 
     info += 'set style line 1 lt 1 lw 3 lc rgb "000000" # black\n'
     info += 'set style line 2 lt 1 lw 3 lc rgb "ff0000" # red\n'
@@ -37,3 +39,5 @@ def gnuplot(output, x_min, x_max, y_min, y_max, xlabel, ylabel, title, txt_list=
     f.write(info)
 
     cmd = 'gnuplot < %s.gpi' % (output)
+    sp = Popen(cmd.split(), stdin=PIPE)
+    sp.communicate()
