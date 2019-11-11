@@ -395,8 +395,8 @@ class NptPPM(GmxSimulation):
             t_vis_VTF[p] = [list(map(round3, _t_vis_coeff)), round3(_t_vis_score), min(_t_list), max(_t_list)]
 
             post_result = {
-                't_p_vis_score_list': t_p_vis_stderr_score_list, # [t, p, [vis, stderr], score]
-                'vis-t-VTF' : t_vis_VTF, # {'pressure': [[coeff], score, t_min, t_max]}
+                'viscosity': t_p_vis_stderr_score_list, # [t, p, [vis, stderr], score]
+                'viscosity-t-VTF' : t_vis_VTF, # {'pressure': [[coeff], score, t_min, t_max]}
             }
             return post_result, 'ppm post_process'
 
