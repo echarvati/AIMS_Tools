@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import subprocess
+import subprocess, sys
 from subprocess import Popen, PIPE
 
 def plot(x_list, y_list):
@@ -43,6 +43,7 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
         if i + 1 != len(txt_list):
             info += ', \\\n'
     f.write(info)
+    sys.stdout.flush()
 
     silent = False
     cmd = 'gnuplot %s.gpi' % (output)
