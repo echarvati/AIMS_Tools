@@ -43,10 +43,12 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
         if i + 1 != len(txt_list):
             info += ', \\\n'
     f.write(info)
-    sys.stdout.flush()
 
+    '''    # cannot get png file directly, unknown reason
+    sys.stdout.flush()
     silent = False
     cmd = 'gnuplot %s.gpi' % (output)
     (stdout, stderr) = (PIPE, PIPE) if silent else (None, None)
     sp = Popen(cmd.split(), stdin=PIPE, stdout=stdout, stderr=stderr)
     sp.communicate()
+    '''
