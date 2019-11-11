@@ -377,33 +377,28 @@ class NptPPM(GmxSimulation):
         def round3(x):
             return float('%.3e' % x)
 
-        if len(p_set)==1:
-            vis_score_list = [list(map(round3, [result['viscosity'], result['score']])) for result in result_list]
-            vis_list = [i[0] for i in vis_score_list]
-            t_p_vis_score_list = list(map(list, zip(T_list, P_list, vis_score_list)))
-            t_p_vis_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
-            t_p_vis_list = list(map(list, zip(T_list, P_list, vis_list)))
-            t_p_vis_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
-            p_coeff_score_list = []
+        if len(p_set) == 1:
+            vis_stderr_list = [[result['viscosity'], result['vis-stderr']] for result in result_list] #
+            score_list = [result['score'] for result in result_list]
+
+            t_p_vis_stderr_score_list = list(map(list, zip(T_list, P_list, vis_stderr_list, score_list))) # [t, p, [vis, stderr], score]
+            t_p_vis_stderr_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
+
             from ...analyzer.fitting import VTFfit
             import numpy as np
-            _t_list = [element[0] for element in t_p_vis_list]
-            _vis_list = [element[2] for element in t_p_vis_list]
+            _t_list = [element[0] for element in t_p_vis_stderr_score_list]
+            _vis_list = [element[2][0] for element in t_p_vis_stderr_score_list]
             _t_vis_coeff, _t_vis_score = VTFfit(_t_list, _vis_list)
-            # p_coeff_score_list.append([p, coeff, score])
 
             p = str(P_list[0])
-            t_vis_VFT = {}
-            t_min = _t_vis_coeff[1]
-            t_max = 1000
-            t_vis_VFT[p] = [list(map(round3, _t_vis_coeff)), round3(_t_vis_score), t_min, t_max]
+            t_vis_VTF = {}
+            t_vis_VTF[p] = [list(map(round3, _t_vis_coeff)), round3(_t_vis_score), min(_t_list), max(_t_list)]
 
             post_result = {
-                't_p_vis_score_list': t_p_vis_score_list,
-                'vis-t-VFT' : t_vis_VFT, # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))
-                # 'p_coeff_score_list': p_coeff_score_list  # vis = np.exp(coeff[0]+coeff[2]/(t-coeff[1]))
+                't_p_vis_score_list': t_p_vis_stderr_score_list, # [t, p, [vis, stderr], score]
+                'vis-t-VTF' : t_vis_VTF, # {'pressure': [[coeff], score, t_min, t_max]}
             }
-            return post_result, 'not important'
+            return post_result, 'ppm post_process'
 
     @staticmethod
     def get_post_data(post_result, T, P, smiles_list, **kwargs) -> dict:
