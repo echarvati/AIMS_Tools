@@ -118,7 +118,7 @@ class Npt(GmxSimulation):
         if info == none, extend simulation for 500 ps
         '''
 
-        if info==None:
+        if info is None:
             continue_n = 500 / dt
         elif len(info.get('continue_n')) == 1:
             continue_n = info.get('continue_n')[0]
@@ -134,7 +134,7 @@ class Npt(GmxSimulation):
         nprocs = self.jobmanager.nprocs
         commands = []
 
-        if continue_n == None:
+        if continue_n is None:
             raise Exception('npt.extend_single(): continue_n cannot be None\n')
         if name != 'npt':
             raise Exception('npt.extend_single(): name must be npt\n')
