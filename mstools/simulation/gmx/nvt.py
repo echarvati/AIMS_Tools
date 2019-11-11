@@ -246,6 +246,7 @@ class Nvt(GmxSimulation):
                 t_p_diffgk_list = []
                 for i, result in enumerate(result_list):
                     t_p_diffgk_list.append([T_list[i], P_list[i], result.get('diffusion constant')]) # [t, p, diff_dict{name: [diff, stderr]}]
+                post_result['diffusion constant gk'] = t_p_diffgk_list
                     '''
                 _name_list = t_p_diffgk_list[0][2].keys()
                 _diffgk_list = {name: [] for name in _name_list}
