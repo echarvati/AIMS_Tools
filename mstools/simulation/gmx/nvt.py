@@ -245,15 +245,15 @@ class Nvt(GmxSimulation):
             if result_list[0].get('diffusion constant-gk and score') is not None:
                 t_p_diffgk_list = []
                 for i, result in enumerate(result_list):
-                    t_p_diffgk_list.append([T_list[i], P_list[i], result.get('diffusion constant')]) # [t, p, diff_dict{name: [diff, stderr]}]
-                post_result['diffusion constant gk'] = t_p_diffgk_list
-                    '''
+                    t_p_diffgk_list.append([T_list[i], P_list[i], result.get('diffusion constant-gk and score')])
+                post_result['diffusion constant gk'] = t_p_diffgk_list # [t, p, diff_dict{name: [diff, score]}]
+                '''
                 _name_list = t_p_diffgk_list[0][2].keys()
                 _diffgk_list = {name: [] for name in _name_list}
                 for element in t_p_diffgk_list:
                     for name in _name_list:
                         _diffgk_list.get(name).append(element[2].get(name))
-                        '''
+                '''
             return post_result, 'time decomposition method, green-kubo'
 
     @staticmethod
@@ -262,6 +262,8 @@ class Nvt(GmxSimulation):
             if P != post_result.get('p'):
                 raise Exception('for single pressure post_result, P must be the same')
         _t_vis_coeff = post_result.get('viscosity')
-
+        return {
+            'a': None
+        }
 
 
