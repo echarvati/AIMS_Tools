@@ -161,8 +161,8 @@ class Nvt(GmxSimulation):
             sp = Popen(cmd.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
             sp.communicate()
 
-    def analyze_acf(self, mstools_dir, charge_list, n_mol_list, current=False, delete_trr=True, weight=0.00):
-        info_dict = self.analyze_diff(charge_list, n_mol_list)
+    def analyze_acf(self, mstools_dir, charge_list, n_mol_list, current=False, delete_trr=True, diff_gk=False, weight=0.00):
+        info_dict = self.analyze_diff(charge_list, n_mol_list, diff_gk=diff_gk)
         if current:
             # self.analyze_vis(mstools_dir=mstools_dir, weight=weight) this function is implemented in prepare
             self.analyze_econ(mstools_dir=mstools_dir, weight=weight)
