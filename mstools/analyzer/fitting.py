@@ -270,8 +270,8 @@ def VTFfit(x: [float], y: [float]):
     import numpy as np
     y = np.log(y)
     guess = [y[-1]-1, x[0]-1, (y[0]-y[-1]+1)*(x[0]-x[0]+1)]
-    # bounds = ([-np.inf, 0, 0], np.inf)
-    bounds = ((0, np.inf))
+    bounds = ([-np.inf, 0, 0], np.inf)
+    # bounds = ((0, np.inf))
 
     return curve_fit_rsq(VTF, x, y, guess, bounds)
 
