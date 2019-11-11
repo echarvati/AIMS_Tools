@@ -44,6 +44,8 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
             info += ', \\\n'
     f.write(info)
 
+    silent = False
     cmd = 'gnuplot < %s.gpi' % (output)
-    sp = Popen(cmd.split(), stdin=PIPE)
+    (stdout, stderr) = (PIPE, PIPE) if silent else (None, None)
+    sp = Popen(cmd.split(), stdin=PIPE, stdout=stdout, stderr=stderr)
     sp.communicate()
