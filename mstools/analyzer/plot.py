@@ -9,7 +9,7 @@ def plot(x_list, y_list):
 def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list=[], x_min=None, x_max=None, y_min=None, y_max=None, x_log_scale=False, y_log_scale=False):
 
     f = open('%s.gpi' % (output), 'w')
-    info = 'set terminal pngcairo size 2000,1600 enhanced font \'Times New Roman,25\'\n'
+    info = 'set terminal pngcairo size 1200,1000 enhanced font \'Times New Roman,25\'\n'
     info += 'set output "%s.png"\n' % (output)
     info += 'set title "%s"\n' % (title)
     info += 'set border lw 1.5\n'
