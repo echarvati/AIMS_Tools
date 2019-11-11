@@ -35,9 +35,11 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
     info += 'pl '
     for i, txt in enumerate(txt_list):
         if type_list[i] == 'errorbars':
-            info += '"%s" u 1:2:3 with errorbars ls %i title "%s"' % (txt, i+1, title_list[i])
+            info += '"%s" u 1:2:3 with errorbars ls %i title "%s"' % (txt, i + 1, title_list[i])
         elif type_list[i] == 'errorlines':
             info += '"%s" u 1:2:3 with errorlines ls %i title "%s"' % (txt, i + 1, title_list[i])
+        elif type_list[i] == 'lines':
+            info += '"%s" u 1:2 with lines ls %i title "%s"' % (txt, i + 1, title_list[i])
         if i + 1 != len(txt_list):
             info += ', \\\n'
     f.write(info)
