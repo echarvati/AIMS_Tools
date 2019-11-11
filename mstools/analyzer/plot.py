@@ -33,15 +33,24 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
         info += 'set logscale y\n'
 
     info += 'pl '
+
+    color_id = 1
     for i, txt in enumerate(txt_list):
         if type_list[i] == 'errorbars':
-            info += '"%s" u 1:2:3 with errorbars ls %i title "%s"' % (txt, i + 1, title_list[i])
+            info += '"%s" u 1:2:3 with errorbars ls %i title "%s"' % (txt, color_id, title_list[i])
         elif type_list[i] == 'errorlines':
-            info += '"%s" u 1:2:3 with errorlines ls %i title "%s"' % (txt, i + 1, title_list[i])
+            info += '"%s" u 1:2:3 with errorlines ls %i title "%s"' % (txt, color_id, title_list[i])
         elif type_list[i] == 'lines':
-            info += '"%s" u 1:2 with lines ls %i title "%s"' % (txt, i + 1, title_list[i])
+            info += '"%s" u 1:2 with lines ls %i title "%s"' % (txt, color_id, title_list[i])
+        elif type_list[i] == 'lines-3':
+            info += '"%s" u 1:2 with lines ls %i title "%s", \\\n' % (txt, color_id, title_list[i][0])
+            color_id += 1
+            info += '"%s" u 1:3 with lines ls %i title "%s", \\\n' % (txt, color_id, title_list[i][1])
+            color_id += 1
+            info += '"%s" u 1:4 with lines ls %i title "%s", \\\n' % (txt, color_id, title_list[i][2])
         if i + 1 != len(txt_list):
             info += ', \\\n'
+        color_id += 1
     f.write(info)
 
     '''    # cannot get png file directly, unknown reason
