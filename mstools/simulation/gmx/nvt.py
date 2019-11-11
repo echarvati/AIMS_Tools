@@ -209,7 +209,7 @@ class Nvt(GmxSimulation):
             _diff_list = {name: [] for name in _name_list}
             for element in t_p_diff_list:
                 for name in _name_list:
-                    _diff_list.get(name).append(element[2].get(name))
+                    _diff_list.get(name).append(element[2].get(name)[0])
 
             from ...analyzer.fitting import polyfit, VTFfit
             _t_vis_coeff, _t_vis_score = VTFfit(_t_list, _vis_list)
