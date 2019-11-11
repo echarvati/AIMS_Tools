@@ -194,7 +194,7 @@ class Nvt(GmxSimulation):
                 t_p_viscosity_score_list.append([T_list[i], P_list[i], result.get('viscosity'), result.get('vis_score')]) # [t, p, value, score]
                 t_p_econ_score_list.append([T_list[i], P_list[i], result.get('electrical conductivity'), result.get('econ_score')]) # [t, p, value, score]
                 t_p_NEecon_stderr_list.append([T_list[i], P_list[i], result.get('Nernst-Einstein electrical conductivity')]) # [t, p, [value, stderr]]
-                t_p_diff_list.append([T_list[i], P_list[i], result.get('diffusion constant')]) # [t, p, diff_dict]
+                t_p_diff_list.append([T_list[i], P_list[i], result.get('diffusion constant')]) # [t, p, diff_dict{name: [diff, stderr]}]
 
             t_p_viscosity_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
             t_p_econ_score_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
@@ -242,6 +242,17 @@ class Nvt(GmxSimulation):
                 'NEecon-t-poly3': t_NEecon_poly3,
                 'diff-t-poly3': t_diff_poly3,
             }
+            if result_list[0].get('diffusion constant-gk and score') is not None:
+                t_p_diffgk_list = []
+                for i, result in enumerate(result_list):
+                    t_p_diffgk_list.append([T_list[i], P_list[i], result.get('diffusion constant')]) # [t, p, diff_dict{name: [diff, stderr]}]
+                    '''
+                _name_list = t_p_diffgk_list[0][2].keys()
+                _diffgk_list = {name: [] for name in _name_list}
+                for element in t_p_diffgk_list:
+                    for name in _name_list:
+                        _diffgk_list.get(name).append(element[2].get(name))
+                        '''
             return post_result, 'time decomposition method, green-kubo'
 
     @staticmethod
