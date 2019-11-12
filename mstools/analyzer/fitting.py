@@ -136,13 +136,13 @@ def curve_fit_rsq(func, x_list, y_list, guess=None, bounds=None) -> ((float), fl
     y_array = np.array(y_list)
 
     if guess is None and bounds is not None:
-        popt, pcov = curve_fit(func, x_array, y_array, bounds)
+        popt, pcov = curve_fit(func, x_array, y_array, bounds=bounds)
     elif guess is not None and bounds is None:
-        popt, pcov = curve_fit(func, x_array, y_array, guess)
+        popt, pcov = curve_fit(func, x_array, y_array, guess=guess)
     elif guess is None and bounds is None:
         popt, pcov = curve_fit(func, x_array, y_array)
     else:
-        popt, pcov = curve_fit(func, x_array, y_array, guess, bounds)
+        popt, pcov = curve_fit(func, x_array, y_array, guess=guess, bounds=bounds)
     ss_tot = ((y_array - y_array.mean()) ** 2).sum()
     predict = np.array([func(x, *popt) for x in x_array])
     ss_res = ((y_array - predict) ** 2).sum()
