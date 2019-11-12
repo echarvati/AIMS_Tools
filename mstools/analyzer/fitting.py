@@ -135,10 +135,14 @@ def curve_fit_rsq(func, x_list, y_list, guess=None, bounds=None) -> ((float), fl
     x_array = np.array(x_list)
     y_array = np.array(y_list)
 
-    if guess is None:
-        popt, pcov = curve_fit(func, x_array, y_array, bounds=bounds)
+    if guess is None and bounds is not None:
+        popt, pcov = curve_fit(func, x_array, y_array, bounds)
+    elif guess is not None and bounds is None:
+        popt, pcov = curve_fit(func, x_array, y_array, guess)
+    elif guess is None and bounds is None:
+        popt, pcov = curve_fit(func, x_array, y_array)
     else:
-        popt, pcov = curve_fit(func, x_array, y_array, guess, bounds=bounds)
+        popt, pcov = curve_fit(func, x_array, y_array, guess, bounds)
     ss_tot = ((y_array - y_array.mean()) ** 2).sum()
     predict = np.array([func(x, *popt) for x in x_array])
     ss_res = ((y_array - predict) ** 2).sum()
@@ -287,7 +291,7 @@ def ExpConst(x, A, C, tau):
 
 def ExpConstfit(x: [float], y: [float], guess=None, bounds=None):
     import numpy as np
-    if bounds is None:
+    if bounds is 'suggest':
         bounds = ([-np.inf, 0, 0], [np.inf, np.inf, np.inf])
     return curve_fit_rsq(ExpConst, x, y, guess=guess, bounds=bounds)
 
