@@ -357,7 +357,6 @@ class NptPPM(GmxSimulation):
                 info_dict['continue'][-1] = False
                 info_dict['continue_n'][-1] = 0
                 warn_dict['reason'][-1] = 'simulation time exceed 20 ns, failed'
-                continue
 
             a_list.append(ppm)
             vis_list.append(vis_and_stderr[0])
