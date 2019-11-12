@@ -237,7 +237,7 @@ class NptPPM(GmxSimulation):
         info_dict.update(ad_dict)
         return info_dict
 
-    def analyze(self, dirs=None, check_converge=True, more_info=True, **kwargs):
+    def analyze(self, dirs=None, check_converge=True, sim_time_cutoff=2.0e4, **kwargs): # cutoff 2.0e4 ps
         import numpy as np
         from ...panedr import edr_to_df
         from ...analyzer.fitting import polyfit
@@ -259,19 +259,35 @@ class NptPPM(GmxSimulation):
         }
         for ppm in self.amplitudes_steps.keys():
             name_ppm = 'ppm-%.3f' % ppm
+            info_dict['name'].append(name_ppm)
             log = name_ppm + '.log'
             last_line = get_last_line(log)
+            if not os.path.exists('%s.log' % name_ppm):
+                info_dict['length'].append(None)
+                info_dict['failed'].append(True)
+                info_dict['continue'].append(False)
+                info_dict['continue_n'].append(0)
+                warn_dict['reason'].append('%s.log do not exists' % (name_ppm))
+                warn_dict['warning'].append(None)
+                warn_dict['more_info'].append(None)
+                continue
             if not os.path.exists('%s.edr' % name_ppm):
+                info_dict['length'].append(None)
                 info_dict['failed'].append(True)
                 info_dict['continue'].append(False)
                 info_dict['continue_n'].append(0)
                 warn_dict['reason'].append('%s.edr do not exists' % (name_ppm))
+                warn_dict['warning'].append(None)
+                warn_dict['more_info'].append(None)
                 continue
             if not last_line.startswith('Finished mdrun'):
+                info_dict['length'].append(None)
                 info_dict['failed'].append(True)
                 info_dict['continue'].append(False)
                 info_dict['continue_n'].append(0)
                 warn_dict['reason'].append('%s.log ended abnormally' % (log))
+                warn_dict['warning'].append(None)
+                warn_dict['more_info'].append(None)
                 continue
 
             df = edr_to_df('%s.edr' % name_ppm)
@@ -281,7 +297,6 @@ class NptPPM(GmxSimulation):
             potential_series = df.Potential
             length = potential_series.index[-1]
 
-            info_dict['name'].append(name_ppm)
             info_dict['length'].append(length)
             ### Check structure freezing using Density
             if density_series.min() / 1000 < 0.1:  # g/mL
@@ -289,6 +304,9 @@ class NptPPM(GmxSimulation):
                 info_dict['continue'].append(False)
                 info_dict['continue_n'].append(0)
                 warn_dict['reason'].append('vaporize')
+                warn_dict['warning'].append(None)
+                warn_dict['more_info'].append(None)
+                continue
             ### Check convergence
             else:
                 if check_converge:
@@ -299,24 +317,23 @@ class NptPPM(GmxSimulation):
                     # use density to do a final determination
                     _, when_dens = is_converged(density_series, frac_min=0)
                     when = max(when_pe, when_dens)
-                    if when > length * 0.5:
+                    if when > length * 0.5 and length < sim_time_cutoff:
                         info_dict['failed'].append(False)
                         info_dict['continue'].append(True)
                         info_dict['continue_n'].append(int(5.0e6))
                         warn_dict['reason'].append('PE and density not converged')
                         warn_dict['warning'].append(None)
-                        if more_info:
-                            warn_dict['more_info'].append(None)
+                        warn_dict['more_info'].append(None)
                     else:
                         self.gmx.trjconv('%s.tpr' % name_ppm, '%s.xtc' % name_ppm, '%s_trj.gro' % name_ppm,
-                                         skip=10, pbc_nojump=True, silent=True)
+                                         skip=math.floor(length / 100), pbc_nojump=True, silent=True)
                         result = self.ppm_is_converged('%s_trj.gro' % name_ppm)
                         info_dict['failed'].append(result.get('failed'))
                         info_dict['continue'].append(result.get('continue'))
                         info_dict['continue_n'].append(result.get('continue_n'))
                         warn_dict['reason'].append(result.get('reason'))
-                        if more_info:
-                            warn_dict['more_info'].append(result.get('more_info'))
+                        warn_dict['warning'].append(None)
+                        warn_dict['more_info'].append(result.get('more_info'))
                         os.remove('%s_trj.gro' % name_ppm)
             ###
 
@@ -335,11 +352,11 @@ class NptPPM(GmxSimulation):
                 info_dict['continue_n'][-1] = int(1e7)
                 warn_dict['reason'][-1] = 'error bar too large for viscosity calculation'
 
-            if info_dict.get('continue')[-1] == True and info_dict.get('length')[-1] > 1.0e5:
+            if info_dict.get('continue')[-1] == True and info_dict.get('length')[-1] > sim_time_cutoff:
                 info_dict['failed'][-1] = True
                 info_dict['continue'][-1] = False
                 info_dict['continue_n'][-1] = 0
-                warn_dict['reason'][-1] = 'simulation time exceed 1.0e5 ps, failed'
+                warn_dict['reason'][-1] = 'simulation time exceed 20 ns, failed'
                 continue
 
             a_list.append(ppm)
