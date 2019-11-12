@@ -229,7 +229,7 @@ class Nvt(GmxSimulation):
             t_NEecon_poly3[p] = [list(map(round5, _t_NEecon_coeff)), round5(_t_NEecon_score), min(_t_list), max(_t_list)]
             t_diff_poly3[p] = [{}, min(_t_list), max(_t_list)]
             for name in _name_list:
-                t_diff_poly3[p][0][name] = [list(map(round5, _t_diff_coeff_score[0])), round5(_t_diff_coeff_score[1])]
+                t_diff_poly3[p][0][name] = [list(map(round5, _t_diff_coeff_score[name][0])), round5(_t_diff_coeff_score[name][1])]
 
             post_result = {
                 'p': P_list[0],
