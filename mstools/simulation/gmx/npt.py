@@ -473,7 +473,7 @@ class Npt(GmxSimulation):
                 'einter': t_p_eint_stderr_list, # [t, p, [intermolecular energy, stderr]]
                 'liquid enthalpy': t_p_hl_stderr_list, # [t, p, [liquid enthalpy, stderr]]
                 'compress': t_p_comp_stderr_list, # [t, p, [compressibility, stderr]]
-                'density-t-poly3': t_dens_poly3, # {'pressure': [[coeff], score, t_min, t_max]}
+                'dens-t-poly3': t_dens_poly3, # {'pressure': [[coeff], score, t_min, t_max]}
                 'einter-t-poly3': t_eint_poly3,
                 'hl-t-poly3': t_hl_poly3,
                 'compress-t-poly3': t_comp_poly3,

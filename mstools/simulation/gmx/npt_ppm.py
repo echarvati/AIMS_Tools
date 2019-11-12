@@ -414,7 +414,7 @@ class NptPPM(GmxSimulation):
 
             post_result = {
                 'viscosity': t_p_vis_stderr_score_list, # [t, p, [vis, stderr], score]
-                'viscosity-t-VTF' : t_vis_VTF, # {'pressure': [[coeff], score, t_min, t_max]}
+                'vis-t-VTF' : t_vis_VTF, # {'pressure': [[coeff], score, t_min, t_max]}
             }
             return post_result, 'ppm post_process'
 
