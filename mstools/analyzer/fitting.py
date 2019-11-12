@@ -272,11 +272,9 @@ def fit_VTF(x_list: [float], y_list: [float], guess: [float] = None, bounds=None
 def VTFfit(x: [float], y: [float]):
     import numpy as np
     y = np.log(y)
-    guess = [y[-1]-1, x[0]-1, (y[0]-y[-1]+1)*(x[0]-x[0]+1)]
-    bounds = ([-np.inf, 0, 0], np.inf)
-    # bounds = ((0, np.inf))
-
-    return curve_fit_rsq(VTF, x, y, guess, bounds)
+    # guess = [y[-1]-1, x[0]-1, (y[0]-y[-1]+1)*(x[0]-x[0]+1)]
+    bounds = ([-np.inf, 0, 0], [np.inf, np.inf, np.inf])
+    return curve_fit_rsq(VTF, x, y, bounds=bounds)
 
 def VTFval(x, coeff):
     import numpy as np
