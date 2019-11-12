@@ -285,11 +285,11 @@ def ExpConst(x, A, C, tau):
     import numpy as np
     return A * np.exp(-x/tau) + C
 
-def ExpConstfit(x: [float], y: [float], bounds=None):
+def ExpConstfit(x: [float], y: [float], guess=None, bounds=None):
     import numpy as np
     if bounds is None:
         bounds = ([-np.inf, 0, 0], [np.inf, np.inf, np.inf])
-    return curve_fit_rsq(ExpConst, x, y, bounds=bounds)
+    return curve_fit_rsq(ExpConst, x, y, guess=guess, bounds=bounds)
 
 def ExpConstval(x, coeff):
     import numpy as np
