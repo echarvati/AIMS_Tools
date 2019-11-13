@@ -559,7 +559,7 @@ class Npt(GmxSimulation):
             'density-poly4'   : [list(map(round3, coeff_dens)), round3(score_dens)],
             'einter-poly4'    : [list(map(round3, coeff_eint)), round3(score_eint)],
             'hl-poly4'        : [list(map(round3, coeff_hl)), round3(score_hl)],
-            'density-t-poly3' : t_dens_poly3,
+            'dens-t-poly3' : t_dens_poly3,
             'einter-t-poly3'  : t_eint_poly3,
             'hl-t-poly3'      : t_hl_poly3,
             'compress-t-poly3': t_comp_poly3,
@@ -613,7 +613,7 @@ class Npt(GmxSimulation):
         density = None
         cp_pv = None
         expansion = None
-        if len(post_result['density-t-poly3'])>=5:
+        if len(post_result['dens-t-poly3']) >= 5:
             _p_dens_list = []
             _p_dDdT_list = []
             for _p in post_result['density-t-poly3']:
@@ -633,8 +633,8 @@ class Npt(GmxSimulation):
                     dDdT = polyval(P, coef)
                     expansion = -1 / density * dDdT  # K^-1
                     cp_pv = - molwt * P / density ** 2 * dDdT * 0.1  # J/mol/K
-        elif str(P) in post_result['density-t-poly3'].keys():
-            coef, score, tmin, tmax = post_result['density-t-poly3'][str(P)]
+        elif str(P) in post_result['dens-t-poly3'].keys():
+            coef, score, tmin, tmax = post_result['dens-t-poly3'][str(P)]
             if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
                 density, dDdT = polyval_derivative(T, coef)
                 expansion = -1 / density * dDdT  # K^-1
