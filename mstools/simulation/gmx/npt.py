@@ -616,8 +616,8 @@ class Npt(GmxSimulation):
         if len(post_result['dens-t-poly3']) >= 5:
             _p_dens_list = []
             _p_dDdT_list = []
-            for _p in post_result['density-t-poly3']:
-                coef, score, tmin, tmax = post_result['density-t-poly3'][str(_p)]
+            for _p in post_result['dens-t-poly3']:
+                coef, score, tmin, tmax = post_result['dens-t-poly3'][str(_p)]
                 if score < converge_criterion or T < tmin - 10 or T > tmax + 10:
                     continue
 
