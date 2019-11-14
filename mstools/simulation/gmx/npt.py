@@ -718,7 +718,7 @@ class Npt(GmxSimulation):
                 _p_hl_list.append([_p, hl])
             if len(_p_hl_list) >= 5:
                 coef, score = polyfit(*zip(*_p_hl_list), 3)
-                _p_list = list(zip(*_p_comp_list))[0]
+                _p_list = list(zip(*_p_hl_list))[0]
                 if P > min(_p_list) - 10 and P < max(_p_list) + 10:
                     liquid_enthalpy = polyval(P, coef)  # kJ/mol
         elif str(P) in post_result['hl-t-poly3'].keys():
