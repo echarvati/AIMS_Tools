@@ -707,7 +707,7 @@ class Npt(GmxSimulation):
         result.update(ad_dict)
 
         liquid_enthalpy = None
-        if len(post_result['hl-t-poly3'])>=5:
+        if len(post_result['hl-t-poly3']) >= 5:
             _p_hl_list = []
             for _p in post_result['hl-t-poly3']:
                 coef, score, tmin, tmax = post_result['hl-t-poly3'][str(_p)]
@@ -715,7 +715,7 @@ class Npt(GmxSimulation):
                     continue
 
                 hl = polyval(T, coef)
-                _p_hl_list.append([_p, hl])
+                _p_hl_list.append([float(_p), hl])
             if len(_p_hl_list) >= 5:
                 coef, score = polyfit(*zip(*_p_hl_list), 3)
                 _p_list = list(zip(*_p_hl_list))[0]
