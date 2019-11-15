@@ -29,6 +29,17 @@ def get_atom_numbers(smiles):
     mol.addh()
     return len(mol.atoms)
 
+def get_atom_type_list(smiles):
+    rdk_mol = Chem.MolFromSmiles(smiles)
+    atom_type_list = []
+    for atom in rdk_mol.GetAtoms():
+        if atom.GetAtomicNum() not in atom_type_list:
+            atom_type_list.append(atom.GetAtomicNum())
+    if 1 in atom_type_list:
+        atom_type_list.remove(1)
+    atom_type_list.sort()
+    return atom_type_list
+
 def get_heavy_atom_numbers(smiles):
     mol = pybel.readstring("smi", smiles)
     return len(mol.atoms)
