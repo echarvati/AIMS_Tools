@@ -11,7 +11,7 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
     f = open('%s.gpi' % (output), 'w')
     info = 'set terminal pngcairo size 1200,1000 enhanced font \'Times New Roman,25\'\n'
     info += 'set output "%s.png"\n' % (output)
-    info += 'set title "%s"\n' % (title)
+    info += 'set title "%s"\n' % (title.replace('@', '{/Symbol a}'))
     info += 'set border lw 1.5\n'
 
     info += 'set xlabel "%s"\n' % (xlabel)

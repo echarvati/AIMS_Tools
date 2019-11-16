@@ -76,6 +76,10 @@ def is_aromatic(smiles):
     else:
         return True
 
+def get_ring_number(smiles):
+    rdk_mol = Chem.MolFromSmiles(smiles)
+    return rdk_mol.GetRingInfo().NumRings()
+
 def remove_chirality(smiles):
     s = ''.join(smiles.split('@'))
     return get_canonical_smiles(s)
