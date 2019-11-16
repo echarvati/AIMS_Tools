@@ -418,7 +418,7 @@ class NvtSlab(GmxSimulation):
             'dliq'      : list(map(list, zip(T_list, dliq_stderr_list))),
             'dgas'      : list(map(list, zip(T_list, dgas_stderr_list))),
             'st'        : list(map(list, zip(T_list, st___stderr_list))),
-            'pzz'       : list(map(list, zip(T_list, pzz__stderr_list))),
+            'pzz'       : list(map(list, zip(T_list, pzz__stderr_list))), # [t, [pzz, pzz_stderr]] unit: bar
             'dminus-fit': [list(map(round3, coeff_dminus)), round3(score_dminus)],
             'dplus-fit' : [list(map(round3, coeff_dplus)), round3(score_dplus)],
             'st-fit'    : [list(map(round3, coeff_st)), round3(score_st)]
