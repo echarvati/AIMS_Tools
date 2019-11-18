@@ -41,17 +41,17 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
         elif type_list[i] == 'xerrorbars':
             info += '"%s" u 1:2:3 with xerrorbars ls %i title "%s"' % (txt, color_id, title_list[i])
         elif type_list[i] == 'errorlines':
-            info += '"%s" u 1:2:3 with errorlines ls %i title "%s"' % (txt, color_id, title_list[i])
+            info += '"%s" u 1:2:3 with errorlines ls %i lw 5 title "%s"' % (txt, color_id, title_list[i])
         elif type_list[i] == 'lines':
-            info += '"%s" u 1:2 with lines ls %i title "%s"' % (txt, color_id, title_list[i])
+            info += '"%s" u 1:2 with lines ls %i lw 5 title "%s"' % (txt, color_id, title_list[i])
         elif type_list[i] == 'lines-3':
-            info += '"%s" u 1:2 with lines ls %i title "%s", \\\n' % (txt, color_id, title_list[i][0])
+            info += '"%s" u 1:2 with lines ls %i lw 5 title "%s", \\\n' % (txt, color_id, title_list[i][0])
             color_id += 1
-            info += '"%s" u 1:3 with lines ls %i title "%s", \\\n' % (txt, color_id, title_list[i][1])
+            info += '"%s" u 1:3 with lines ls %i lw 5 title "%s", \\\n' % (txt, color_id, title_list[i][1])
             color_id += 1
-            info += '"%s" u 1:4 with lines ls %i title "%s", \\\n' % (txt, color_id, title_list[i][2])
+            info += '"%s" u 1:4 with lines ls %i lw 5 title "%s", \\\n' % (txt, color_id, title_list[i][2])
         elif type_list[i] == 'points':
-            info += '"%s" u 1:2 ls %i pt 7 ps 2 title "%s"' % (txt, color_id, title_list[i])
+            info += '"%s" u 1:2 ls %i pt 7 ps 3 title "%s"' % (txt, color_id, title_list[i])
         if i + 1 != len(txt_list):
             info += ', \\\n'
         color_id += 1
