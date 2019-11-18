@@ -38,6 +38,8 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
     for i, txt in enumerate(txt_list):
         if type_list[i] == 'errorbars':
             info += '"%s" u 1:2:3 with errorbars ls %i title "%s"' % (txt, color_id, title_list[i])
+        elif type_list[i] == 'xerrorbars':
+            info += '"%s" u 1:2:3 with xerrorbars ls %i title "%s"' % (txt, color_id, title_list[i])
         elif type_list[i] == 'errorlines':
             info += '"%s" u 1:2:3 with errorlines ls %i title "%s"' % (txt, color_id, title_list[i])
         elif type_list[i] == 'lines':
@@ -48,6 +50,8 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
             info += '"%s" u 1:3 with lines ls %i title "%s", \\\n' % (txt, color_id, title_list[i][1])
             color_id += 1
             info += '"%s" u 1:4 with lines ls %i title "%s", \\\n' % (txt, color_id, title_list[i][2])
+        elif type_list[i] == 'points':
+            info += '"%s" u 1:2 ls %i pt 7 ps 2 title "%s"' % (txt, color_id, title_list[i])
         if i + 1 != len(txt_list):
             info += ', \\\n'
         color_id += 1

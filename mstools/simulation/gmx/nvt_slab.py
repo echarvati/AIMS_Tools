@@ -415,9 +415,9 @@ class NvtSlab(GmxSimulation):
         coeff_st, score_st = fit_vle_st(T_list, st___list, Tc)  # Ast, n
 
         post_result = {
-            'dliq'      : list(map(list, zip(T_list, dliq_stderr_list))),
-            'dgas'      : list(map(list, zip(T_list, dgas_stderr_list))),
-            'st'        : list(map(list, zip(T_list, st___stderr_list))),
+            'dliq'      : list(map(list, zip(T_list, dliq_stderr_list))), # [t, [dliq, stderr]]
+            'dgas'      : list(map(list, zip(T_list, dgas_stderr_list))), # [t, [dgas, stderr]]
+            'st'        : list(map(list, zip(T_list, st___stderr_list))), # [t, [st, stderr]] unit: mN/m
             'pzz'       : list(map(list, zip(T_list, pzz__stderr_list))), # [t, [pzz, pzz_stderr]] unit: bar
             'dminus-fit': [list(map(round3, coeff_dminus)), round3(score_dminus)],
             'dplus-fit' : [list(map(round3, coeff_dplus)), round3(score_dplus)],
