@@ -288,7 +288,7 @@ class Nvt(GmxSimulation):
                 result['Nernst-Einstein electrical conductivity'] = polyval(T, coef)
             # diffusion constant
             diff, tmin, tmax = post_result['diff-t-poly3'][str(P)]
-            coef, score = diff[0]['System']
+            coef, score = diff['System']
             if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
                 result['diffusion constant'] = polyval(T, coef)
         # multi-pressure simulation
