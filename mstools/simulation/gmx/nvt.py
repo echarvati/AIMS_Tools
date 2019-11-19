@@ -185,6 +185,10 @@ class Nvt(GmxSimulation):
             return float('%.5e' % x)
         t_set = set(T_list)
         p_set = set(P_list)
+
+        if len(t_set) < 5:
+            return None, 'T points less than 5'
+
         if len(p_set) == 1:
             t_p_viscosity_score_list = []
             t_p_econ_score_list = []
@@ -237,10 +241,10 @@ class Nvt(GmxSimulation):
                 'electrical conductivity': t_p_econ_score_list, # [t, p, econ, score]
                 'diffusion constant': t_p_diff_list, # [t, p, diff_dict{name: [diff, stderr]}]
                 'Nernst-Einstein electrical conductivity': t_p_NEecon_stderr_list, # [t, p, [value, stderr]]
-                'vis-t-VTF': t_vis_VTF,
+                'vis-t-VTF': t_vis_VTF, # {'pressure': [[coeff], score, t_min, t_max]}
                 'econ-t-poly3': t_econ_poly3,
                 'NEecon-t-poly3': t_NEecon_poly3,
-                'diff-t-poly3': t_diff_poly3,
+                'diff-t-poly3': t_diff_poly3, # {'pressure': [{'System': [[coeff], score]}, t_min, t_max]}
             }
             if result_list[0].get('diffusion constant-gk and score') is not None:
                 t_p_diffgk_list = []
@@ -256,14 +260,41 @@ class Nvt(GmxSimulation):
                 '''
             return post_result, 'time decomposition method, green-kubo'
 
+        if len(p_set) < 5:
+            return None, 'P points less than 5'
+
     @staticmethod
     def get_post_data(post_result, T, P, **kwargs) -> dict:
+        from ...analyzer.fitting import VTFval, polyval
+
+        # single-pressure simulation
         if post_result.get('p') is not None:
             if P != post_result.get('p'):
                 raise Exception('for single pressure post_result, P must be the same')
-        _t_vis_coeff = post_result.get('viscosity')
-        return {
-            'a': None
-        }
+
+            result = {}
+            converge_criterion = 0.95  # R value of fitting
+            # viscosity
+            coef, score, tmin, tmax = post_result['vis-t-VTF'][str(P)]
+            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                result['visosity'] = VTFval(T, coef)
+            # electrical conductivity
+            coef, score, tmin, tmax = post_result['econ-t-poly3'][str(P)]
+            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                result['electrical conductivity'] = polyval(T, coef)
+            # Nernst-Einstein electrical conductivity
+            coef, score, tmin, tmax = post_result['NEecon-t-poly3'][str(P)]
+            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                result['Nernst-Einstein electrical conductivity'] = polyval(T, coef)
+            # diffusion constant
+            diff, tmin, tmax = post_result['diff-t-poly3'][str(P)]
+            coef, score = diff[0]['System']
+            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                result['diffusion constant'] = polyval(T, coef)
+        # multi-pressure simulation
+        else:
+            # multi-pressure part, need to be finished
+            return {}
+        return result
 
 
