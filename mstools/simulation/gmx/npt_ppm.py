@@ -421,9 +421,9 @@ class NptPPM(GmxSimulation):
     def get_post_data(post_result, T, P, smiles_list, **kwargs) -> dict:
         from ...analyzer.fitting import VTFval
         converge_criterion = 0.95  # R value of fitting
-        if len(post_result.get('vis-t-VTF'))==1:
+        if len(post_result.get('vis-t-VTF')) == 1:
             coef, score, tmin, tmax = post_result['vis-t-VTF'][str(P)]
-            if not (score < converge_criterion or T < tmin - 10 or T > tmax + 10):
+            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
                 vis = VTFval(T, coef)
             else:
                 return {}
