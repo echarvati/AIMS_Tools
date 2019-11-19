@@ -195,8 +195,10 @@ class Nvt(GmxSimulation):
             t_p_NEecon_stderr_list = []
             t_p_diff_list = []
             for i, result in enumerate(result_list):
-                t_p_viscosity_score_list.append([T_list[i], P_list[i], result.get('viscosity'), result.get('vis_score')]) # [t, p, value, score]
-                t_p_econ_score_list.append([T_list[i], P_list[i], result.get('electrical conductivity'), result.get('econ_score')]) # [t, p, value, score]
+                if result.get('viscosity') is not None:
+                    t_p_viscosity_score_list.append([T_list[i], P_list[i], result.get('viscosity'), result.get('vis_score')]) # [t, p, value, score]
+                if result.get('electrical conductivity') is not None:
+                    t_p_econ_score_list.append([T_list[i], P_list[i], result.get('electrical conductivity'), result.get('econ_score')]) # [t, p, value, score]
                 t_p_NEecon_stderr_list.append([T_list[i], P_list[i], result.get('Nernst-Einstein electrical conductivity')]) # [t, p, [value, stderr]]
                 t_p_diff_list.append([T_list[i], P_list[i], result.get('diffusion constant')]) # [t, p, diff_dict{name: [diff, stderr]}]
 
@@ -205,9 +207,11 @@ class Nvt(GmxSimulation):
             t_p_NEecon_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
             t_p_diff_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
 
-            _t_list = [element[0] for element in t_p_viscosity_score_list]
+            _vis_t_list = [element[0] for element in t_p_viscosity_score_list]
             _vis_list = [element[2] for element in t_p_viscosity_score_list]
+            _econ_t_list = [element[0] for element in t_p_econ_score_list]
             _econ_list = [element[2] for element in t_p_econ_score_list]
+            _t_list = [element[0] for element in t_p_NEecon_stderr_list]
             _NEecon_list = [element[2][0] for element in t_p_NEecon_stderr_list]
             _name_list = t_p_diff_list[0][2].keys()
             _diff_list = {name: [] for name in _name_list}
@@ -216,8 +220,8 @@ class Nvt(GmxSimulation):
                     _diff_list.get(name).append(element[2].get(name)[0])
 
             from ...analyzer.fitting import polyfit, VTFfit
-            _t_vis_coeff, _t_vis_score = VTFfit(_t_list, _vis_list)
-            _t_econ_coeff, _t_econ_score = polyfit(_t_list, _econ_list, 3)
+            _t_vis_coeff, _t_vis_score = VTFfit(_vis_t_list, _vis_list)
+            _t_econ_coeff, _t_econ_score = polyfit(_econ_t_list, _econ_list, 3)
             _t_NEecon_coeff, _t_NEecon_score = polyfit(_t_list, _NEecon_list, 3)
             _t_diff_coeff_score = {}
             for name in _name_list:
@@ -228,8 +232,8 @@ class Nvt(GmxSimulation):
             t_econ_poly3 = {}
             t_NEecon_poly3 = {}
             t_diff_poly3 = {}
-            t_vis_VTF[p] = [list(map(round5, _t_vis_coeff)), round5(_t_vis_score), min(_t_list), max(_t_list)]
-            t_econ_poly3[p] = [list(map(round5, _t_econ_coeff)), round5(_t_econ_score), min(_t_list), max(_t_list)]
+            t_vis_VTF[p] = [list(map(round5, _t_vis_coeff)), round5(_t_vis_score), min(_vis_t_list), max(_vis_t_list)]
+            t_econ_poly3[p] = [list(map(round5, _t_econ_coeff)), round5(_t_econ_score), min(_econ_t_list), max(_econ_t_list)]
             t_NEecon_poly3[p] = [list(map(round5, _t_NEecon_coeff)), round5(_t_NEecon_score), min(_t_list), max(_t_list)]
             t_diff_poly3[p] = [{}, min(_t_list), max(_t_list)]
             for name in _name_list:
