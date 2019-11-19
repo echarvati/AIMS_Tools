@@ -186,8 +186,8 @@ class Nvt(GmxSimulation):
         t_set = set(T_list)
         p_set = set(P_list)
 
-        if len(t_set) < 5:
-            return None, 'T points less than 5'
+        if len(t_set) < 4:
+            return None, 'T points less than 4'
 
         if len(p_set) == 1:
             t_p_viscosity_score_list = []
