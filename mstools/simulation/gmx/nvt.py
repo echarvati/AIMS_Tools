@@ -183,6 +183,7 @@ class Nvt(GmxSimulation):
     def post_process(T_list, P_list, result_list, **kwargs) -> (dict, str):
         def round5(x):
             return float('%.5e' % x)
+        post_result = {}
         t_set = set(T_list)
         p_set = set(P_list)
 
@@ -207,10 +208,29 @@ class Nvt(GmxSimulation):
             t_p_NEecon_stderr_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
             t_p_diff_list.sort(key=lambda x: (x[1], x[0]))  # sorted by P, then T
 
+            from ...analyzer.fitting import polyfit, VTFfit
+            p = str(P_list[0])
+            # viscosity VTF fit
+            t_vis_VTF = None
             _vis_t_list = [element[0] for element in t_p_viscosity_score_list]
             _vis_list = [element[2] for element in t_p_viscosity_score_list]
+            if len(_vis_list) > 6:
+                _t_vis_coeff, _t_vis_score = VTFfit(_vis_t_list, _vis_list)
+                t_vis_VTF = {}
+                t_vis_VTF[p] = [list(map(round5, _t_vis_coeff)), round5(_t_vis_score), min(_vis_t_list),
+                                max(_vis_t_list)]
+            # electrical conductivity 3th-polyfit
+            t_econ_poly3 = None
             _econ_t_list = [element[0] for element in t_p_econ_score_list]
             _econ_list = [element[2] for element in t_p_econ_score_list]
+            if len(_econ_list) > 6:
+                _t_econ_coeff, _t_econ_score = polyfit(_econ_t_list, _econ_list, 3)
+                t_econ_poly3 = {}
+                t_econ_poly3[p] = [list(map(round5, _t_econ_coeff)), round5(_t_econ_score), min(_econ_t_list),
+                                   max(_econ_t_list)]
+            # diffusion constant and Nernst-Einstein electrical conductivity 3th-polyfit
+            t_NEecon_poly3 = None
+            t_diff_poly3 = None
             _t_list = [element[0] for element in t_p_NEecon_stderr_list]
             _NEecon_list = [element[2][0] for element in t_p_NEecon_stderr_list]
             _name_list = t_p_diff_list[0][2].keys()
@@ -218,27 +238,19 @@ class Nvt(GmxSimulation):
             for element in t_p_diff_list:
                 for name in _name_list:
                     _diff_list.get(name).append(element[2].get(name)[0])
-
-            from ...analyzer.fitting import polyfit, VTFfit
-            _t_vis_coeff, _t_vis_score = VTFfit(_vis_t_list, _vis_list)
-            _t_econ_coeff, _t_econ_score = polyfit(_econ_t_list, _econ_list, 3)
-            _t_NEecon_coeff, _t_NEecon_score = polyfit(_t_list, _NEecon_list, 3)
-            _t_diff_coeff_score = {}
-            for name in _name_list:
-                _t_diff_coeff_score[name] = polyfit(_t_list, _diff_list.get(name), 3)
-
-            p = str(P_list[0])
-            t_vis_VTF = {}
-            t_econ_poly3 = {}
-            t_NEecon_poly3 = {}
-            t_diff_poly3 = {}
-            t_vis_VTF[p] = [list(map(round5, _t_vis_coeff)), round5(_t_vis_score), min(_vis_t_list), max(_vis_t_list)]
-            t_econ_poly3[p] = [list(map(round5, _t_econ_coeff)), round5(_t_econ_score), min(_econ_t_list), max(_econ_t_list)]
-            t_NEecon_poly3[p] = [list(map(round5, _t_NEecon_coeff)), round5(_t_NEecon_score), min(_t_list), max(_t_list)]
-            t_diff_poly3[p] = [{}, min(_t_list), max(_t_list)]
-            for name in _name_list:
-                t_diff_poly3[p][0][name] = [list(map(round5, _t_diff_coeff_score[name][0])), round5(_t_diff_coeff_score[name][1])]
-
+            if len(_t_list) > 6:
+                _t_NEecon_coeff, _t_NEecon_score = polyfit(_t_list, _NEecon_list, 3)
+                _t_diff_coeff_score = {}
+                for name in _name_list:
+                    _t_diff_coeff_score[name] = polyfit(_t_list, _diff_list.get(name), 3)
+                t_NEecon_poly3 = {}
+                t_diff_poly3 = {}
+                t_NEecon_poly3[p] = [list(map(round5, _t_NEecon_coeff)), round5(_t_NEecon_score), min(_t_list),
+                                     max(_t_list)]
+                t_diff_poly3[p] = [{}, min(_t_list), max(_t_list)]
+                for name in _name_list:
+                    t_diff_poly3[p][0][name] = [list(map(round5, _t_diff_coeff_score[name][0])),
+                                                round5(_t_diff_coeff_score[name][1])]
             post_result = {
                 'p': P_list[0],
                 'viscosity': t_p_viscosity_score_list, # [t, p, viscosity, score]
@@ -279,22 +291,46 @@ class Nvt(GmxSimulation):
             result = {}
             converge_criterion = 0.95  # R value of fitting
             # viscosity
-            coef, score, tmin, tmax = post_result['vis-t-VTF'][str(P)]
-            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
-                result['visosity'] = VTFval(T, coef)
+            if post_result['vis-t-VTF'] is None:
+                for t, p, viscosity, score in post_result['viscosity']:
+                    if t == T:
+                        result['visosity'] = viscosity
+                        break
+            else:
+                coef, score, tmin, tmax = post_result['vis-t-VTF'][str(P)]
+                if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                    result['visosity'] = VTFval(T, coef)
             # electrical conductivity
-            coef, score, tmin, tmax = post_result['econ-t-poly3'][str(P)]
-            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
-                result['electrical conductivity'] = polyval(T, coef)
+            if post_result['econ-t-poly3'] is None:
+                for t, p, electrical_conductivity, score in post_result['electrical conductivity']:
+                    if t == T:
+                        result['electrical conductivity'] = electrical_conductivity
+                        break
+            else:
+                coef, score, tmin, tmax = post_result['econ-t-poly3'][str(P)]
+                if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                    result['electrical conductivity'] = polyval(T, coef)
             # Nernst-Einstein electrical conductivity
-            coef, score, tmin, tmax = post_result['NEecon-t-poly3'][str(P)]
-            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
-                result['Nernst-Einstein electrical conductivity'] = polyval(T, coef)
+            if post_result['NEecon-t-poly3'] is None:
+                for t, p, [electrical_conductivity, stderr] in post_result['Nernst-Einstein electrical conductivity']:
+                    if t == T:
+                        result['Nernst-Einstein electrical conductivity'] = electrical_conductivity
+                        break
+            else:
+                coef, score, tmin, tmax = post_result['NEecon-t-poly3'][str(P)]
+                if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                    result['Nernst-Einstein electrical conductivity'] = polyval(T, coef)
             # diffusion constant
-            diff, tmin, tmax = post_result['diff-t-poly3'][str(P)]
-            coef, score = diff['System']
-            if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
-                result['diffusion constant'] = polyval(T, coef)
+            if post_result['diff-t-poly3'] is None:
+                for t, p, diff in post_result['diffusion constant']:
+                    if t == T:
+                        result['diffusion constant'] = diff['System'][0]
+                        break
+            else:
+                diff, tmin, tmax = post_result['diff-t-poly3'][str(P)]
+                coef, score = diff['System']
+                if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                    result['diffusion constant'] = polyval(T, coef)
         # multi-pressure simulation
         else:
             # multi-pressure part, need to be finished
