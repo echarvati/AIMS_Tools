@@ -294,7 +294,7 @@ class Nvt(GmxSimulation):
             if post_result['vis-t-VTF'] is None:
                 for t, p, viscosity, score in post_result['viscosity']:
                     if t == T:
-                        result['viscasdosity'] = viscosity
+                        result['viscosity'] = viscosity
                         break
             else:
                 coef, score, tmin, tmax = post_result['vis-t-VTF'][str(P)]
