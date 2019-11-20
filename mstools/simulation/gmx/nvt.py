@@ -294,12 +294,12 @@ class Nvt(GmxSimulation):
             if post_result['vis-t-VTF'] is None:
                 for t, p, viscosity, score in post_result['viscosity']:
                     if t == T:
-                        result['visosity'] = viscosity
+                        result['viscosity'] = viscosity
                         break
             else:
                 coef, score, tmin, tmax = post_result['vis-t-VTF'][str(P)]
                 if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
-                    result['visosity'] = VTFval(T, coef)
+                    result['viscosity'] = VTFval(T, coef)
             # electrical conductivity
             if post_result['econ-t-poly3'] is None:
                 for t, p, electrical_conductivity, score in post_result['electrical conductivity']:
