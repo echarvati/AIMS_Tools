@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import subprocess, sys
 from subprocess import Popen, PIPE
 
-def plot(x_list, y_list):
-    plt.plot(x_list, y_list)
+def plot(x_list, *args):
+    for arg in args:
+        plt.plot(x_list, arg)
     plt.show()
 
 def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list=[], x_min=None, x_max=None, y_min=None, y_max=None, x_log_scale=False, y_log_scale=False):
