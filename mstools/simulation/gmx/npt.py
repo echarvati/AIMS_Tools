@@ -608,7 +608,7 @@ class Npt(GmxSimulation):
         # multi-pressure simulation
         else:
             ### Calculate with T,P-poly4. Not accurate enough, especially for expansion and compressibility
-            if post_result.get('density-poly4') != None:
+            if post_result.get('density-poly4') is not None:
                 coeff_dens, score_dens = post_result['density-poly4']
                 density4, dDdT4, dDdP4 = polyval_derivative_2d(T, P, 4, coeff_dens)  # g/mL
                 expansion4 = -1 / density4 * dDdT4  # K^-1
@@ -622,7 +622,7 @@ class Npt(GmxSimulation):
                     'cp_pv-poly4': cp_pv4,
                 }
                 result.update(ad_dict)
-            if post_result.get('einter-poly4') != None:
+            if post_result.get('einter-poly4') is not None:
                 coeff_eint, score_eint = post_result['einter-poly4']
                 einter4, dEdT4, dEdP4 = polyval_derivative_2d(T, P, 4, coeff_eint)  # kJ/mol
 
@@ -633,7 +633,7 @@ class Npt(GmxSimulation):
                     'cp_inter-poly4': cp_inter4,
                 }
                 result.update(ad_dict)
-            if len(post_result['dens-t-poly3']) >= 5:
+            if post_result.get('dens-t-poly3') is not None and len(post_result['dens-t-poly3']) >= 5:
                 _p_dens_list = []
                 _p_dDdT_list = []
                 for _p in post_result['dens-t-poly3']:
@@ -654,7 +654,7 @@ class Npt(GmxSimulation):
                         result['density'] = density
                         result['expansion'] = -1 / density * dDdT  # K^-1
                         result['cp_pv'] = - molwt * P / density ** 2 * dDdT * 0.1  # J/mol/K
-            if len(post_result['einter-t-poly3']) >= 5:
+            if post_result.get('einter-t-poly3') is not None and len(post_result['einter-t-poly3']) >= 5:
                 _p_eint_list = []
                 _p_dEdT_list = []
                 for _p in post_result['einter-t-poly3']:
@@ -676,7 +676,7 @@ class Npt(GmxSimulation):
                         coef, score = polyfit(*zip(*_p_dEdT_list), 3)
                         dEdT = polyval(P, coef)
                         result['cp_inter'] = dEdT * 1000  # J/mol.K
-            if len(post_result['compress-t-poly3']) >= 5:
+            if post_result.get('compress-t-poly3') is not None and len(post_result['compress-t-poly3']) >= 5:
                 _p_comp_list = []
                 for _p in post_result['compress-t-poly3']:
                     coef, score, tmin, tmax = post_result['compress-t-poly3'][str(_p)]
@@ -689,7 +689,7 @@ class Npt(GmxSimulation):
                     _p_list = list(zip(*_p_comp_list))[0]
                     if P > min(_p_list) - 10 and P < max(_p_list) + 10:
                         result['compressibility'] = polyval(P, coef)
-            if len(post_result['hl-t-poly3']) >= 5:
+            if post_result.get('hl-t-poly3') is not None and len(post_result['hl-t-poly3']) >= 5:
                 _p_hl_list = []
                 for _p in post_result['hl-t-poly3']:
                     coef, score, tmin, tmax = post_result['hl-t-poly3'][str(_p)]
