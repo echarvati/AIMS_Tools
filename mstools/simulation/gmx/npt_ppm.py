@@ -364,14 +364,12 @@ class NptPPM(GmxSimulation):
                 info_dict['continue'][-1] = True
                 info_dict['continue_n'][-1] = int(1e7)
                 warn_dict['reason'][-1] = 'error bar too large for viscosity calculation'
-                continue
 
             if info_dict.get('continue')[-1] and info_dict.get('length')[-1] > sim_time_cutoff:
                 info_dict['failed'][-1] = True
                 info_dict['continue'][-1] = False
                 info_dict['continue_n'][-1] = 0
                 warn_dict['reason'][-1] = 'simulation time exceed 20 ns, failed'
-                continue
 
             a_list_all.append(ppm)
             vis_list_all.append(vis_and_stderr[0])
