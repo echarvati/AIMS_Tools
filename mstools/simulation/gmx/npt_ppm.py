@@ -390,12 +390,14 @@ class NptPPM(GmxSimulation):
             c1, s1 = polyfit(a_list_all, (np.array(vis_list_all) + np.array(stderr_list_all)).tolist(), 1)
             c2, s1 = polyfit(a_list_all, (np.array(vis_list_all) - np.array(stderr_list_all)).tolist(), 1)
             info_dict['converged'] = False
+            a_list = a_list_all
             vis_list = vis_list_all
             stderr_list = stderr_list_all
         vis_dict = {
             'viscosity': coef_[0],
             'vis-stderr': (c1[0] - c2[0]) / 2,
             'score': score,
+            'acceleration_list': a_list,
             'vis_list': vis_list,
             'stderr_list': stderr_list,
         }
