@@ -14,9 +14,9 @@ class NptPPM(GmxSimulation):
         self.procedure = 'npt-ppm'
         self.dt = 0.001
         self.n_atoms_default = 6000
-        self.amplitudes_steps = amplitudes_steps or OrderedDict([(0.010, int(4.5e6)),
-                                                                 (0.020, int(3.0e6)),
-                                                                 (0.030, int(2.0e6)),
+        self.amplitudes_steps = amplitudes_steps or OrderedDict([(0.010, int(2.0e6)),
+                                                                 (0.020, int(2.0e6)),
+                                                                 (0.030, int(1.0e6)),
                                                                  (0.040, int(1.0e6)),
                                                                  # (0.050, int(1.0e6)),
                                                                  ])
