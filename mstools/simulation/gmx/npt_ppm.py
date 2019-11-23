@@ -247,6 +247,9 @@ class NptPPM(GmxSimulation):
         a_list = []
         vis_list = []
         stderr_list = []
+        a_list_all = []
+        vis_list_all = []
+        stderr_list_all = []
         info_dict = {
             'name': [],
             'length': [],
@@ -318,33 +321,33 @@ class NptPPM(GmxSimulation):
                 warn_dict['more_info'].append(None)
                 continue
             ### Check convergence
-            else:
-                if check_converge:
-                    # use potential to do a initial determination
-                    # use at least 4/5 of the data
-                    _, when_pe = is_converged(potential_series, frac_min=0)
-                    when_pe = min(when_pe, length * 0.2)
-                    # use density to do a final determination
-                    _, when_dens = is_converged(density_series, frac_min=0)
-                    when = max(when_pe, when_dens)
-                    if when > length * 0.5 and length < sim_time_cutoff:
-                        info_dict['failed'].append(False)
-                        info_dict['continue'].append(True)
-                        info_dict['continue_n'].append(int(5.0e6))
-                        warn_dict['reason'].append('PE and density not converged')
-                        warn_dict['warning'].append(None)
-                        warn_dict['more_info'].append(None)
-                    else:
-                        self.gmx.trjconv('%s.tpr' % name_ppm, '%s.xtc' % name_ppm, '%s_trj.gro' % name_ppm,
-                                         skip=math.floor(length / 100), pbc_nojump=True, silent=True)
-                        result = self.ppm_is_converged('%s_trj.gro' % name_ppm)
-                        info_dict['failed'].append(result.get('failed'))
-                        info_dict['continue'].append(result.get('continue'))
-                        info_dict['continue_n'].append(result.get('continue_n'))
-                        warn_dict['reason'].append(result.get('reason'))
-                        warn_dict['warning'].append(None)
-                        warn_dict['more_info'].append(result.get('more_info'))
-                        os.remove('%s_trj.gro' % name_ppm)
+            if check_converge:
+                # use potential to do a initial determination
+                # use at least 4/5 of the data
+                _, when_pe = is_converged(potential_series, frac_min=0)
+                when_pe = min(when_pe, length * 0.2)
+                # use density to do a final determination
+                _, when_dens = is_converged(density_series, frac_min=0)
+                when = max(when_pe, when_dens)
+                if when > length * 0.5 and length < sim_time_cutoff:
+                    info_dict['failed'].append(False)
+                    info_dict['continue'].append(True)
+                    info_dict['continue_n'].append(int(1.0e6))
+                    warn_dict['reason'].append('PE and density not converged')
+                    warn_dict['warning'].append(None)
+                    warn_dict['more_info'].append(None)
+                else:
+                    self.gmx.trjconv('%s.tpr' % name_ppm, '%s.xtc' % name_ppm, '%s_trj.gro' % name_ppm,
+                                     skip=math.floor(length / 100), pbc_nojump=True, silent=True)
+                    result = self.ppm_is_converged('%s_trj.gro' % name_ppm)
+                    info_dict['failed'].append(result.get('failed'))
+                    info_dict['continue'].append(result.get('continue'))
+                    info_dict['continue_n'].append(result.get('continue_n'))
+                    warn_dict['reason'].append(result.get('reason'))
+                    warn_dict['warning'].append(None)
+                    warn_dict['more_info'].append(result.get('more_info'))
+                    os.remove('%s_trj.gro' % name_ppm)
+
             ###
 
             inv_series = df['1/Viscosity']
@@ -357,26 +360,38 @@ class NptPPM(GmxSimulation):
             vis_blocks = [1000 / inv for inv in inv_blocks]  # convert Pa*s to cP
             vis_and_stderr = [np.mean(vis_blocks), np.std(vis_blocks, ddof=1) / math.sqrt(len(vis_blocks))]
 
-            if info_dict.get('failed')[-1] == False and info_dict.get('continue')[-1] == False and vis_and_stderr[1] / vis_and_stderr[0] > 0.1:
+            if not info_dict.get('failed')[-1] and not info_dict.get('continue')[-1] and vis_and_stderr[1] / vis_and_stderr[0] > 0.1:
                 info_dict['continue'][-1] = True
                 info_dict['continue_n'][-1] = int(1e7)
                 warn_dict['reason'][-1] = 'error bar too large for viscosity calculation'
+                continue
 
-            if info_dict.get('continue')[-1] == True and info_dict.get('length')[-1] > sim_time_cutoff:
+            if info_dict.get('continue')[-1] and info_dict.get('length')[-1] > sim_time_cutoff:
                 info_dict['failed'][-1] = True
                 info_dict['continue'][-1] = False
                 info_dict['continue_n'][-1] = 0
                 warn_dict['reason'][-1] = 'simulation time exceed 20 ns, failed'
+                continue
 
-            a_list.append(ppm)
-            vis_list.append(vis_and_stderr[0])
-            stderr_list.append(vis_and_stderr[1])
+            a_list_all.append(ppm)
+            vis_list_all.append(vis_and_stderr[0])
+            stderr_list_all.append(vis_and_stderr[1])
+            if not info_dict.get('failed')[-1] and not info_dict.get('continue')[-1]:
+                a_list.append(ppm)
+                vis_list.append(vis_and_stderr[0])
+                stderr_list.append(vis_and_stderr[1])
         # if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
-
-        coef_, score = polyfit(a_list, vis_list, 1)
-        c1, s1 = polyfit(a_list, (np.array(vis_list) + np.array(stderr_list)).tolist(), 1)
-        c2, s1 = polyfit(a_list, (np.array(vis_list) - np.array(stderr_list)).tolist(), 1)
+        if len(a_list) >= 4:
+            coef_, score = polyfit(a_list, vis_list, 1)
+            c1, s1 = polyfit(a_list, (np.array(vis_list) + np.array(stderr_list)).tolist(), 1)
+            c2, s1 = polyfit(a_list, (np.array(vis_list) - np.array(stderr_list)).tolist(), 1)
+            info_dict['converged'] = True
+        else:
+            coef_, score = polyfit(a_list_all, vis_list_all, 1)
+            c1, s1 = polyfit(a_list_all, (np.array(vis_list_all) + np.array(stderr_list_all)).tolist(), 1)
+            c2, s1 = polyfit(a_list_all, (np.array(vis_list_all) - np.array(stderr_list_all)).tolist(), 1)
+            info_dict['converged'] = False
         vis_dict = {
             'viscosity': coef_[0],
             'vis-stderr': (c1[0] - c2[0]) / 2,
