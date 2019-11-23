@@ -382,7 +382,7 @@ class NptPPM(GmxSimulation):
                 stderr_list.append(vis_and_stderr[1])
         # if set(info_dict.get('failed'))=={False} and set(info_dict.get('continue'))=={False}:
         # coef_, score = polyfit(self.amplitudes_steps.keys(), vis_list, 1, weight=1 / np.sqrt(stderr_list))
-        if len(a_list) >= 4:
+        if len(a_list) >= 4 or a_list == [0.005, 0.010, 0.015]:
             coef_, score = polyfit(a_list, vis_list, 1)
             c1, s1 = polyfit(a_list, (np.array(vis_list) + np.array(stderr_list)).tolist(), 1)
             c2, s1 = polyfit(a_list, (np.array(vis_list) - np.array(stderr_list)).tolist(), 1)
