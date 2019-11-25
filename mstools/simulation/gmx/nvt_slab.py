@@ -192,7 +192,7 @@ class NvtSlab(GmxSimulation):
                 print('Time: ', begin, end)
 
             self.gmx.density('nvt.xtc', 'nvt.tpr', xvg=xvg, begin=begin, end=end, silent=True)
-            df = pd.read_table(xvg, skiprows=24, names=['Density'], index_col=0, sep='\s+')
+            df = pd.read_csv(xvg, skiprows=24, names=['Density'], index_col=0, sep='\s+')
             density_series = df.Density
             if not debug:
                 os.remove(xvg)
