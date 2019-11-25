@@ -325,12 +325,31 @@ class Nvt(GmxSimulation):
                 for t, p, diff in post_result['diffusion constant']:
                     if t == T:
                         result['diffusion constant'] = diff['System'][0]
+                        keys = list(diff.keys())
+                        keys.remove('System')
+                        diff_sum = 0.
+                        for i in keys:
+                            diff_sum += diff[i][0]
+                        if diff_sum != 0.:
+                            result['diffusion constant sum'] = diff_sum
                         break
             else:
                 diff, tmin, tmax = post_result['diff-t-poly3'][str(P)]
                 coef, score = diff['System']
                 if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
                     result['diffusion constant'] = polyval(T, coef)
+                keys = list(diff.keys())
+                keys.remove('System')
+                diff_sum = 0.
+                for i in keys:
+                    coef, score = diff[i]
+                    if score > converge_criterion and T > tmin - 10 and T < tmax + 10:
+                        diff_sum += polyval(T, coef)
+                    else:
+                        break
+                else:
+                    if diff_sum != 0.:
+                        result['diffusion constant sum'] = diff_sum
         # multi-pressure simulation
         else:
             # multi-pressure part, need to be finished
