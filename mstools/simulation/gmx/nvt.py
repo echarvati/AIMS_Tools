@@ -336,5 +336,3 @@ class Nvt(GmxSimulation):
             # multi-pressure part, need to be finished
             return {}
         return result
-
-
