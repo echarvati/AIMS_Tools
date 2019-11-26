@@ -99,24 +99,25 @@ class Nvt(GmxSimulation):
             # calculate diffusion constant using Green-Kubo relation
             from ...analyzer.acf import get_t_property_list, get_block_average
             from ...analyzer.fitting import ExpConstfit, ExpConstval
+            import math
             # fit the data using exponential function
             t_list, diff_list = get_t_property_list(property='diffusion constant', name='System')
             n_block = len([t for t in t_list if t < 1])
             bounds = ([0, 0, 0], [100, 100, 100])
-            coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[10:],
-                                      get_block_average(diff_list * 1e8, n_block=n_block)[10:], bounds=bounds)
-            coef[0] /= 1e8
-            coef[1] /= 1e8
+            coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
+                                      get_block_average(diff_list * 10 ** (-math.floor(math.log10(diff_list[-1]))), n_block=n_block)[2:], bounds=bounds)
+            coef[0] *= 10 ** (math.floor(math.log10(diff_list[-1])))
+            coef[1] *= 10 ** (math.floor(math.log10(diff_list[-1])))
             diff_gk_dict = {'System': get_std_out([coef[1], ExpConstval(t_list[-1], coef)])}
             for i in range(len(n_mol_list)):
                 mol_name = 'MO%i' % (i)
                 t_list, diff_list = get_t_property_list(property='diffusion constant', name=mol_name)
-                coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[10:],
-                                          get_block_average(diff_list * 1e8, n_block=n_block)[10:], bounds=bounds)
-                coef[0] /= 1e8
-                coef[1] /= 1e8
+                coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
+                                          get_block_average(diff_list * 10 ** (-math.floor(math.log10(diff_list[-1]))), n_block=n_block)[2:], bounds=bounds)
+                coef[0] *= 10 ** (math.floor(math.log10(diff_list[-1])))
+                coef[1] *= 10 ** (math.floor(math.log10(diff_list[-1])))
                 diff_gk_dict.update({mol_name: get_std_out([coef[1], ExpConstval(t_list[-1], coef)])})
-            info_dict.update({'diffusion constant-gk': diff_gk_dict})
+            info_dict.update({'diffusion constant-gk': diff_gk_dict}) # {name: [diff_t_inf, diff_t_end]}
 
             # estimate electrical conductivity using Nernst-Einstein relation
             if charge_list != None and set(charge_list) != {0}:
@@ -271,6 +272,12 @@ class Nvt(GmxSimulation):
                 for i, result in enumerate(result_list):
                     t_p_diffgk_list.append([T_list[i], P_list[i], result.get('diffusion constant-gk and score')])
                 post_result['diffusion constant gk'] = t_p_diffgk_list # [t, p, diff_dict{name: [diff, score]}]
+            if result_list[0].get('diffusion constant-gk and stderr') is not None:
+                t_p_diffgk_list = []
+                for i, result in enumerate(result_list):
+                    t_p_diffgk_list.append([T_list[i], P_list[i], result.get('diffusion constant-gk and score')])
+                post_result['diffusion constant gk'] = t_p_diffgk_list  # [t, p, diff_dict{name: [diff, score]}]
+
                 '''
                 _name_list = t_p_diffgk_list[0][2].keys()
                 _diffgk_list = {name: [] for name in _name_list}
