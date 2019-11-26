@@ -7,7 +7,8 @@ def plot(x_list, *args):
         plt.plot(x_list, arg)
     plt.show()
 
-def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list=[], x_min=None, x_max=None, y_min=None, y_max=None, x_log_scale=False, y_log_scale=False):
+def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list=[], x_min=None, x_max=None, y_min=None,
+            y_max=None, x_log_scale=False, y_log_scale=False, reciprical_x=False):
 
     f = open('%s.gpi' % (output), 'w')
     info = 'set terminal pngcairo size 1200,1000 enhanced font \'Times New Roman,25\'\n'
@@ -15,7 +16,12 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
     info += 'set title "%s"\n' % (title.replace('@', '{/Symbol a}'))
     info += 'set border lw 1.5\n'
 
-    info += 'set xlabel "%s"\n' % (xlabel)
+    if reciprical_x:
+        line = '(1/$1):'
+        info += 'set xlabel "1 / %s"\n' % (xlabel)
+    else:
+        line = '1:'
+        info += 'set xlabel "%s"\n' % (xlabel)
     info += 'set ylabel "%s"\n' % (ylabel)
 
     if x_min is not None:
@@ -38,21 +44,21 @@ def gnuplot(output, xlabel, ylabel, title, txt_list=[], type_list=[], title_list
     color_id = 1
     for i, txt in enumerate(txt_list):
         if type_list[i] == 'errorbars':
-            info += '"%s" u 1:2:3 with errorbars ls %i title "%s"' % (txt, color_id, title_list[i])
+            info += '"%s" u %s2:3 with errorbars ls %i title "%s"' % (txt, line, color_id, title_list[i])
         elif type_list[i] == 'xerrorbars':
-            info += '"%s" u 1:2:3 with xerrorbars ls %i title "%s"' % (txt, color_id, title_list[i])
+            info += '"%s" u %s2:3 with xerrorbars ls %i title "%s"' % (txt, line, color_id, title_list[i])
         elif type_list[i] == 'errorlines':
-            info += '"%s" u 1:2:3 with errorlines ls %i lw 5 title "%s"' % (txt, color_id, title_list[i])
+            info += '"%s" u %s2:3 with errorlines ls %i lw 5 title "%s"' % (txt, line, color_id, title_list[i])
         elif type_list[i] == 'lines':
-            info += '"%s" u 1:2 with lines ls %i lw 5 title "%s"' % (txt, color_id, title_list[i])
+            info += '"%s" u %s2 with lines ls %i lw 5 title "%s"' % (txt, line, color_id, title_list[i])
         elif type_list[i] == 'lines-3':
-            info += '"%s" u 1:2 with lines ls %i lw 5 title "%s", \\\n' % (txt, color_id, title_list[i][0])
+            info += '"%s" u %s2 with lines ls %i lw 5 title "%s", \\\n' % (txt, line, color_id, title_list[i][0])
             color_id += 1
-            info += '"%s" u 1:3 with lines ls %i lw 5 title "%s", \\\n' % (txt, color_id, title_list[i][1])
+            info += '"%s" u %s3 with lines ls %i lw 5 title "%s", \\\n' % (txt, line, color_id, title_list[i][1])
             color_id += 1
-            info += '"%s" u 1:4 with lines ls %i lw 5 title "%s", \\\n' % (txt, color_id, title_list[i][2])
+            info += '"%s" u %s4 with lines ls %i lw 5 title "%s", \\\n' % (txt, line, color_id, title_list[i][2])
         elif type_list[i] == 'points':
-            info += '"%s" u 1:2 ls %i pt 7 ps 3 title "%s"' % (txt, color_id, title_list[i])
+            info += '"%s" u %s:2 ls %i pt 7 ps 3 title "%s"' % (txt, line, color_id, title_list[i])
         if i + 1 != len(txt_list):
             info += ', \\\n'
         color_id += 1
