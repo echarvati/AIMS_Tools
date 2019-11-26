@@ -104,18 +104,20 @@ class Nvt(GmxSimulation):
             t_list, diff_list = get_t_property_list(property='diffusion constant', name='System')
             n_block = len([t for t in t_list if t < 1])
             bounds = ([0, 0, 0], [100, 100, 100])
+            factor = math.floor(math.log10(diff_list.mean()))
             coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
-                                      get_block_average(diff_list * 10 ** (-math.floor(math.log10(diff_list[-1]))), n_block=n_block)[2:], bounds=bounds)
-            coef[0] *= 10 ** (math.floor(math.log10(diff_list[-1])))
-            coef[1] *= 10 ** (math.floor(math.log10(diff_list[-1])))
+                                      get_block_average(diff_list * 10 ** (-factor), n_block=n_block)[2:], bounds=bounds)
+            coef[0] *= 10 ** (factor)
+            coef[1] *= 10 ** (factor)
             diff_gk_dict = {'System': get_std_out([coef[1], ExpConstval(t_list[-1], coef)])}
             for i in range(len(n_mol_list)):
                 mol_name = 'MO%i' % (i)
                 t_list, diff_list = get_t_property_list(property='diffusion constant', name=mol_name)
+                factor = math.floor(math.log10(diff_list.mean()))
                 coef, score = ExpConstfit(get_block_average(t_list, n_block=n_block)[2:],
-                                          get_block_average(diff_list * 10 ** (-math.floor(math.log10(diff_list[-1]))), n_block=n_block)[2:], bounds=bounds)
-                coef[0] *= 10 ** (math.floor(math.log10(diff_list[-1])))
-                coef[1] *= 10 ** (math.floor(math.log10(diff_list[-1])))
+                                          get_block_average(diff_list * 10 ** (-factor), n_block=n_block)[2:], bounds=bounds)
+                coef[0] *= 10 ** (factor)
+                coef[1] *= 10 ** (factor)
                 diff_gk_dict.update({mol_name: get_std_out([coef[1], ExpConstval(t_list[-1], coef)])})
             info_dict.update({'diffusion constant-gk': diff_gk_dict}) # {name: [diff_t_inf, diff_t_end]}
 
