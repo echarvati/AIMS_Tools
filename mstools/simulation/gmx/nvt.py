@@ -133,7 +133,6 @@ class Nvt(GmxSimulation):
                 econ1 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
                 econ2 *= 1.6 ** 2 / 1.38 * 10 ** 8 / temperature_and_stderr[0] / volume_and_stderr[0]
                 info_dict.update({'Nernst-Einstein electrical conductivity-gk': get_std_out([econ1, econ2])})
-            os.remove('traj.gro')
 
         return info_dict
 
