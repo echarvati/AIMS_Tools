@@ -148,7 +148,8 @@ def curve_fit_rsq(func, x_list, y_list, guess=None, bounds=None) -> ((float), fl
     ss_res = ((y_array - predict) ** 2).sum()
     rsq = 1 - ss_res / ss_tot
 
-    return tuple(popt), rsq
+    return popt, rsq
+    # return tuple(popt), rsq
 
 
 def logistic(x, A1, A2, x0, p):
@@ -301,3 +302,5 @@ def ExpConstval(x, coeff):
     C = coeff[1]
     tau = coeff[2]
     return A * np.exp(-x / tau) + C
+
+
